@@ -1,0 +1,49 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "app/components/home/ProductCard.tsx",
+    "app/components/shared/Logo.js",
+    "app/components/shared/Button.js",
+    "app/components/product/singleProduct/PorductDetails.js",
+    "app/components/shared/Slider.js",
+    "app/components/product/Reviews.js",
+    ".next/types/**/*.ts"
+, "admin/components/orderGur/seperator.jsx"  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

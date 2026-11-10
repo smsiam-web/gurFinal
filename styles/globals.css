@@ -1,0 +1,264 @@
+/* tailwind css directives*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* google font links "mulish" */
+@import url("https://fonts.googleapis.com/css2?family=Mulish:wght@200;300;400;500;600;700;800&display=swap");
+
+/* google font links for bangla text "baloo da 2" */
+@import url("https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@400;500;600;700;800&family=Mulish:wght@200;300;400;500;600;700;800&display=swap");
+
+html,
+body {
+  font-family: "Mulish", sans-serif;
+  /* font-family: "Baloo Da 2", cursive; */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+h1,
+h2,
+h3 {
+  @apply text-title;
+}
+h4,
+h5,
+h6 {
+  @apply text-mid;
+}
+
+p {
+  @apply text-sub-title;
+}
+
+/* tailwind components */
+@layer components {
+  .over-image {
+    background-image: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.473),
+        rgba(0, 0, 0, 0)
+      ),
+      url("/cover.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .mobile-image {
+    background-image: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.438),
+        rgba(0, 0, 0, 0)
+      ),
+      url("/cover_m.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .text-shadow {
+    text-shadow: 0.2px 1px 8px rgba(0, 0, 0, 0.445);
+  }
+  .text-shadow-white {
+    text-shadow: 0.2px 1px 8px rgb(236, 232, 232);
+  }
+  /* bangla font family  */
+  .ffb {
+    font-family: "Baloo Da 2", cursive;
+  }
+
+  /* Wrapper container */
+  .container {
+    @apply !max-w-screen-2xl mx-auto px-4 sm:px-8;
+  }
+  /* footer widgets title  */
+  .footer-title {
+    @apply font-bold text-lg pb-8 capitalize;
+  }
+  /* Buttons */
+  .btn-white {
+    @apply bg-white text-title font-bold px-7 py-3 block w-fit rounded hover:shadow-md transition duration-300 ease-in-out;
+  }
+  /* Section title */
+  .section-title {
+    @apply md:text-4xl text-2xl font-bold text-center text-title;
+  }
+  /* card Shadow */
+  .card-shadow {
+    box-shadow: 0 30px 40px 0 rgb(131 132 135 / 15%);
+    -webkit-box-shadow: 0 30px 40px 0 rgb(131 132 135 / 15%);
+  }
+  /* lable  */
+  .lable {
+    @apply block text-gray-500 font-medium text-sm leading-none mb-2;
+  }
+
+  /* animation duration in tailwind way */
+  .animate-duration {
+    @apply transition-all duration-500;
+  }
+
+  .hover-primary {
+    @apply animate-duration hover:text-primary;
+  }
+  .h-bg-primary {
+    @apply animate-duration hover:bg-primary text-white;
+  }
+
+  .hover-greens {
+    @apply animate-duration hover:text-green-500;
+  }
+  .h-bg-greens {
+    @apply animate-duration hover:bg-green-500 text-white;
+  }
+
+  .hover-red {
+    @apply animate-duration hover:text-red-500;
+  }
+  .h-bg-red {
+    @apply animate-duration hover:bg-red-500 text-white;
+  }
+
+  /* hide scrollbar  */
+  /* Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  /* Products */
+  /* product card */
+  .product-card {
+    @apply flex flex-col justify-between items-start cursor-pointer p-2 sm:p-3 md:p-4 xl:p-5 rounded hover:card-shadow transition-all duration-500 relative border border-gray-100 hover:border-gray-200;
+  }
+}
+
+/* date input mantain  */
+.mantine-13qt2rl {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.mantine-1wqyxin {
+  width: 150px !important;
+}
+
+.mantine-Select-rightSection {
+  display: none;
+}
+
+.mantine-DateInput-input {
+  outline: 2px solid transparent !important;
+  border-width: 1px;
+  outline-offset: 2px !important;
+  padding: 22px 20px;
+  font-size: 14px;
+  line-height: 20px;
+  opacity: 0.75;
+  appearance: none;
+  border-radius: 6px;
+  -webkit-border-radius: 6px;
+  -moz-border-radius: 6px;
+  -ms-border-radius: 6px;
+  -o-border-radius: 6px;
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.main > .content > p,
+h1 {
+  font-family: sans-serif;
+}
+
+.main > .content > p {
+  font-size: 1.7em;
+  text-align: justify;
+  width: 80%;
+}
+
+.main button {
+  display: block;
+  cursor: pointer;
+  background-color: crimson;
+  color: white;
+  font-size: 1.5em;
+  font-family: sans-serif;
+  width: 8em;
+  height: 3em;
+  font-weight: 500;
+  border-radius: 5px;
+  border-color: transparent;
+  margin: 0 auto 0 auto;
+}
+
+.main .button-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+}
+
+/* Aspect-ratio ভিত্তিক A4 container */
+.a4 {
+  aspect-ratio: 210 / 297;           /* A4 ratio */
+  width: min(100%, 794px);           /* ~210mm @96dpi */
+  background: #fff;
+  position: relative;
+  overflow: hidden;                  /* স্ক্রিনে কন্টেইনারে কোনো স্ক্রল থাকবে না */
+}
+
+/* শতাংশে উচ্চতা নিয়ন্ত্রণ */
+:root {
+  --a4-header-h: 14%;   /* চাইলে 12–16% টিউন করুন */
+  --a4-footer-h: 11%;
+  --a4-pad: 2.5%;
+}
+
+.a4-header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: var(--a4-header-h);
+}
+
+.a4-footer {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: var(--a4-footer-h);
+}
+
+.a4-body {
+  position: absolute;
+  left: 0; right: 0;
+  top: var(--a4-header-h);
+  bottom: var(--a4-footer-h);
+  padding: var(--a4-pad);
+  overflow: hidden;                  /* আগে auto ছিল → এখন hidden (scroll off) */
+}
+
+/* প্রিন্টে একদম A4 mm সাইজ */
+@media print {
+  @page { size: A4; margin: 0; }
+  html, body { height: auto; }
+  .a4 {
+    width: 210mm !important;
+    height: 297mm !important;
+    aspect-ratio: auto !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    overflow: visible !important;    /* প্রিন্টে পুরো কনটেন্ট দেখা যাবে */
+  }
+  .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+}
