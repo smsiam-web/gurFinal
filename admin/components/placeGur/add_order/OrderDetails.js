@@ -53,6 +53,9 @@ const SOURCE = [
   { name: "Message", id: "Message" },
   { name: "Whatsapp", id: "Whatsapp" },
   { name: "Phone", id: "Phone" },
+  { name: "Tele Sales", id: "Tele Sales" },
+  { name: "Incomplete", id: "Incomplete" },
+  { name: "Exchange", id: "Exchange" },
 ];
 
 /* ------------------------- Helpers -------------------------- */
