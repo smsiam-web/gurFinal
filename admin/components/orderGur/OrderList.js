@@ -666,7 +666,7 @@ const AllOrder = () => {
                                   )}
 
                                   <Link
-                                    href={`/place-order/edit-order/id=${item.id}`}
+                                    href={`/place-gur/edit-order/id=${item.id}`}
                                   >
                                     <Tooltip
                                       label="Edit"

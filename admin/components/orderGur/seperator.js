@@ -1,7 +1,7 @@
 // utils/orders-item-qty-date-source.js
 
 // ----- Fixed source keys (preserve exact case & order)
-export const SOURCE_KEYS = ["Web", "Message", "Whatsapp", "Phone", "Incomplete", "Tele Sales"];
+export const SOURCE_KEYS = ["Web", "Message", "Whatsapp", "Phone", "Incomplete", "Tele Sales", "Exchange"];
 
 /** Format ISO-like date to YYYY-MM-DD in a specific IANA timezone (default: Asia/Dhaka). */
 export const formatDateKey = (isoLike, tz = "Asia/Dhaka") => {

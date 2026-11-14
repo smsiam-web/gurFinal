@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import SearchOrder from "./SearchOrder";
 import OrderDropDownload from "./OrderDropDownload";
 import AllOrder from "./OrderList";
@@ -10,18 +10,41 @@ import PerItemQtyDashboard from "./PerItemQtyDashboard";
 
 const OrdersGur = () => {
   const orders = useSelector(selectOrder);
+  const [isHide, setIsHide] = useState(false);
+
+  const toggle = () => {
+    setIsHide((prev) => !prev);
+  };
 
   const user = useSelector(selectUser);
+
   return (
     <main>
       <div className="grid mx-auto">
-        <h1 className="mb-3 text-lg font-bold text-gray-700 ">Orders</h1>
+        <h1 className="mb-3 text-lg font-bold text-gray-700">
+          Orders{" "}
+          {["Admin", "HR"].includes(user?.staff_role) && (
+            <span
+              className="bg-blue-600 text-white px-3 py-2 text-sm rounded-lg cursor-pointer"
+              onClick={toggle}
+            >
+              {isHide ? "Show" : "Hide"}
+            </span>
+          )}
+        </h1>
 
-        {user.email === "smsiam696@gmail.com"  && <PerItemQtyDashboard orders={orders} />}
-        {user.email === "admin@gmail.com"  && <PerItemQtyDashboard orders={orders} />}
+        {!isHide && user.email === "smsiam696@gmail.com" && (
+          <PerItemQtyDashboard orders={orders} />
+        )}
+
+        {!isHide && user.email === "admin@gmail.com" && (
+          <PerItemQtyDashboard orders={orders} />
+        )}
+
         <SearchOrder />
-        {user.staff_role === "HR"  && <OrderDropDownload />}
-        {user.staff_role === "Admin"  && <OrderDropDownload />}
+
+        {["Admin", "HR"].includes(user?.staff_role) && <OrderDropDownload />}
+
         <AllOrder />
       </div>
     </main>

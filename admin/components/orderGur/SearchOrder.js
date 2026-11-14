@@ -29,7 +29,7 @@ import { IoCall, IoSearchSharp } from "react-icons/io5";
 import generateBulkPrintStickers from "./generateBulkSticker";
 
 const SearchGurOrder = ({ onClick }) => {
-  const [currentValue, setCurrentValue] = useState("RA0101");
+  const [currentValue, setCurrentValue] = useState("RA0102");
   const [filterOrder, setFilterOrder] = useState(null);
   const [orders, setOrders] = useState(useSelector(selectAllOrder));
   const [order, setOrder] = useState(useSelector(selectOrder));
@@ -41,6 +41,7 @@ const SearchGurOrder = ({ onClick }) => {
   const buttonRef = useRef(null); // ✅ Fixed useRef syntax
   const [limits, setLimits] = useState(false);
   const [limit, setLimit] = useState(30);
+  const [range, setRange] = useState(30);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState("all");
@@ -74,6 +75,10 @@ const SearchGurOrder = ({ onClick }) => {
       if (comboFilter === "9999") {
         list = list.filter(
           (o) =>
+            !(
+              norm(o?.items[0]?.product_id) === norm("50004") &&
+              o?.items.length === 1
+            ) &&
             !(
               norm(o?.items[0]?.product_id) === norm("1113") &&
               o?.items.length === 1
@@ -128,6 +133,9 @@ const SearchGurOrder = ({ onClick }) => {
             (norm(o?.items[0]?.product_id) === norm("1111") &&
               o?.items.length === 1 &&
               o?.items[0].quantity > 1),
+          norm(o?.items[0]?.product_id) === norm("50004") &&
+            o?.items.length === 1 &&
+            o?.items[0].quantity > 1,
         );
       } else if (comboFilter === "2001") {
         list = list.filter((o) =>
@@ -153,7 +161,7 @@ const SearchGurOrder = ({ onClick }) => {
     setStatusFilter("all");
     setCourierFilter("all");
     setComboFilter("all");
-    setCurrentValue("RA0101");
+    setCurrentValue("RA0102");
     applyFilters();
   };
 
@@ -195,12 +203,13 @@ const SearchGurOrder = ({ onClick }) => {
   // ✅ Auto reset search modal
   useEffect(() => {
     if (!opened) {
-      setCurrentValue("RA0101");
+      setCurrentValue("RA0102");
       setFilterOrder(null);
     }
   }, [opened]);
 
   const handleChange = (e) => setCurrentValue(e.currentTarget.value);
+  const handleLimit = (e) => setRange(e.currentTarget.value);
   const toggleOpen = () => (opened ? close() : open());
 
   useEffect(() => {
@@ -264,7 +273,7 @@ const SearchGurOrder = ({ onClick }) => {
   useEffect(() => {
     const privileged = ["Admin", "HR", "CEO"].includes(user?.staff_role);
     setLimits(privileged);
-    setLimit(privileged ? 400 : 30);
+    setLimit(privileged ? 30 : 30);
   }, [user]);
 
   // ✅ Firebase real-time listener
@@ -350,58 +359,6 @@ const SearchGurOrder = ({ onClick }) => {
         message: `Order ${orderID} updated successfully.`,
         color: "green",
       });
-
-      // const sfPayload = {
-      //   cod_amount: `${item?.totals?.cod || 0}`,
-      //   invoice: `${orderID || "N/A"}`,
-      //   note: `${item?.notes || ""}`,
-      //   recipient_name: `${item?.customer?.name || ""}`,
-      //   recipient_phone: `${item?.customer?.phone || ""}`,
-      //   recipient_address: `${item?.shipping_address?.street || ""}`,
-      // };
-
-      // const resp = await fetch("/api/steadfast/create-order", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(sfPayload),
-      // });
-      // const result = await resp.json();
-
-      // if (!resp.ok || result?.type !== "success") {
-      //   throw new Error(result?.message || "Steadfast order failed");
-      // }
-
-      // const cons = result?.data?.consignment || {};
-      // const fulfillmentPatch = {
-      //   courier: "SteadFast",
-      //   consignment_id: cons?.consignment_id ?? null,
-      //   tracking_code: cons?.tracking_code ?? null,
-      //   steadfast_raw: result?.data,
-      // };
-
-      // notifications.show({
-      //   title: "Success (Steadfast)",
-      //   message: `Order sent to Steadfast${
-      //     fulfillmentPatch.consignment_id
-      //       ? ` · CN: ${fulfillmentPatch.consignment_id}`
-      //       : ""
-      //   }`,
-      //   color: "blue",
-      //   autoClose: 6000,
-      // });
-
-      // const normalized = {
-      //   ...item,
-      //   fulfillment: { ...fulfillmentPatch },
-      // };
-
-      // await db.collection("ordersGur").doc(orderID).update(normalized);
-
-      // notifications.show({
-      //   title: "Updated",
-      //   message: `Order ${orderID} updated successfully.`,
-      //   color: "green",
-      // });
     } catch (err) {
       console.error("Courier create failed:", err);
       notifications.show({
@@ -416,6 +373,9 @@ const SearchGurOrder = ({ onClick }) => {
   const search = async () => {
     const value = currentValue?.toUpperCase();
     filter(value);
+  };
+  const limitExtend = async () => {
+    setLimit(range)
   };
 
   return (
@@ -481,7 +441,7 @@ const SearchGurOrder = ({ onClick }) => {
                 user.staff_role === "HR" ||
                 user?.staff_role === "Sales Manager" ||
                 user?.staff_role === "Admin") && (
-                <Link href={`/place-aam/edit-order/id=${filterOrder.id}`}>
+                <Link href={`/place-gur/edit-order/id=${filterOrder.id}`}>
                   <span className="bg-black flex items-center gap-1 px-3 py-2 rounded-md cursor-pointer  text-xs text-white font-medium hover:shadow-lg transition-all duration-300">
                     <FiEdit size={14} /> Edit
                   </span>
@@ -771,10 +731,30 @@ const SearchGurOrder = ({ onClick }) => {
             </div>
           </div>
           {bulkOrder.length > 0 && (
-            <h1 className="text-center">
-              Selected Orders:{" "}
-              <span className="font-bold">{bulkOrder.length}</span>
-            </h1>
+            <>
+              <h1 className="text-center">
+                Selected Orders:{" "}
+                <span className="font-bold">{bulkOrder.length}</span>
+              </h1>
+
+           { ["Admin", "HR"].includes(user?.staff_role) &&
+                <div className="flex justify-center gap-3">
+                  <input
+                    className="inline-block px-3 py-1 text-sm focus:outline-neutral-200 leading-5 rounded-md text-center border-blue-600 h-14 bg-gray-100 border-transparent focus:bg-white"
+                    type="text"
+                    value={range}
+                    onChange={(e) => handleLimit(e)}
+                    placeholder="Search by #ID"
+                  />
+                  <Button
+                    onClick={() => limitExtend()}
+                    title="Set Limit"
+                    className="bg-blue-400 hover:bg-blue-500 hover:shadow-lg transition-all duration-300 text-white inline-block h-14"
+                    icon=<IoSearchSharp size={24} />
+                  />
+                </div>}
+            
+            </>
           )}
         </div>
       </div>
