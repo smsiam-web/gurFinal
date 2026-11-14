@@ -20,7 +20,8 @@ const OrdersGur = () => {
         {user.email === "smsiam696@gmail.com"  && <PerItemQtyDashboard orders={orders} />}
         {user.email === "admin@gmail.com"  && <PerItemQtyDashboard orders={orders} />}
         <SearchOrder />
-        {user.staff_role === "HR" && <OrderDropDownload />}
+        {user.staff_role === "HR"  && <OrderDropDownload />}
+        {user.staff_role === "Admin"  && <OrderDropDownload />}
         <AllOrder />
       </div>
     </main>

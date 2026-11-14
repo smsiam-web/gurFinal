@@ -5,7 +5,7 @@ import jsPDF from "jspdf";
  * Summary logic (same rule as before)
  */
 function getSummary(orders) {
-  const COMBO_IDS = ["1107", "1108", "1109", "1110", "1111", "1112", "1113"];
+  const COMBO_IDS = ["1107", "1108", "1109", "1110", "1111", "1112", "1113", "50004"];
   const SPECIAL_ID = "2001";
   const summary = {};
 

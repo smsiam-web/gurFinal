@@ -747,6 +747,7 @@ const SearchGurOrder = ({ onClick }) => {
                 disabled={!canFilter}
               >
                 <option value="combo">Combo</option>
+                <option value="50004">Liquid x 3kg</option>
                 <option value="1113">5items x 3kg</option>
                 <option value="1112">5kg Combo</option>
                 <option value="1111">5items x 2.5kg</option>

@@ -32,6 +32,7 @@ function generateBulkPrintStickers(invoiceArray) {
       single[0].product_id === "1110" ||
       single[0].product_id === "1111" ||
       single[0].product_id === "1112" ||
+      single[0].product_id === "50004" ||
       single[0].product_id === "1113")
         ? (single[0].quantity > 1 ? "Double Combo" : single[0]?.title) : (single.some(
       (item) => String(item.product_id) === "2001"

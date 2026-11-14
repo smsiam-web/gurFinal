@@ -43,7 +43,7 @@ const normalizeCreatedUser = (raw) => {
 const totalQty = (rows = []) =>
   rows.reduce(
     (acc, r) => acc + Number((r.unitWgt ? r?.unitWgt * r?.qty : r?.qty) || 0),
-    0
+    0,
   );
 
 // average kg per order
@@ -73,7 +73,7 @@ export default function PerItemQtyDashboard({ orders = [] }) {
         created_at: o?.created_at ?? o?.createdAt,
         created_user: o?.created_user ?? o?.createdUser,
       })),
-    [orders]
+    [orders],
   );
 
   // 🔢 Overall: created_user → order count
@@ -93,9 +93,9 @@ export default function PerItemQtyDashboard({ orders = [] }) {
         .map(([created_user, count]) => ({ created_user, count }))
         .sort(
           (a, b) =>
-            b.count - a.count || a.created_user.localeCompare(b.created_user)
+            b.count - a.count || a.created_user.localeCompare(b.created_user),
         ),
-    [userCountsOverall]
+    [userCountsOverall],
   );
 
   // (2) Compute item quantities (overall/date & date+source)
@@ -185,7 +185,7 @@ export default function PerItemQtyDashboard({ orders = [] }) {
   const handleDownloadOverallPNG = async () => {
     await downloadNodeAsPng(
       overallRef.current,
-      `overall-${new Date().toISOString().slice(0, 10)}`
+      `overall-${new Date().toISOString().slice(0, 10)}`,
     );
   };
 
@@ -196,7 +196,7 @@ export default function PerItemQtyDashboard({ orders = [] }) {
   const handleDownloadDateSourcePNG = async () => {
     await downloadNodeAsPng(
       dateSourceRef.current,
-      `date-source-${new Date().toISOString().slice(0, 10)}`
+      `date-source-${new Date().toISOString().slice(0, 10)}`,
     );
   };
   // প্রতিটি date ব্লকের DOM নোড রাখার জন্য map-ref
@@ -229,12 +229,12 @@ export default function PerItemQtyDashboard({ orders = [] }) {
                   .sort(
                     (a, b) =>
                       b.count - a.count ||
-                      a.created_user.localeCompare(b.created_user)
+                      a.created_user.localeCompare(b.created_user),
                   );
 
                 const totalForDate = entries.reduce(
                   (acc, r) => acc + r.count,
-                  0
+                  0,
                 );
 
                 const handleDownloadThisDate = async () => {
@@ -242,7 +242,7 @@ export default function PerItemQtyDashboard({ orders = [] }) {
                   if (!node) return;
                   await downloadNodeAsPng(
                     node,
-                    `AamWala_Order_Place_${dateKey}` // ফাইল নাম
+                    `AamWala_Order_Place_${dateKey}`, // ফাইল নাম
                   );
                 };
 
@@ -419,7 +419,10 @@ export default function PerItemQtyDashboard({ orders = [] }) {
                                 {(row.item_key === "1107" ||
                                   row.item_key === "1108" ||
                                   row.item_key === "1109" ||
-                                  row.item_key === "1110") &&
+                                  row.item_key === "1110" ||
+                                  row.item_key === "1111" ||
+                                  row.item_key === "1113" ||
+                                  row.item_key === "50004") &&
                                   ` (${row.qty}p)`}
                               </span>
                             </td>
@@ -489,9 +492,9 @@ export default function PerItemQtyDashboard({ orders = [] }) {
                             (itemKey === "1107" && 2.5) ||
                             (itemKey === "1108" && 3.5) ||
                             (itemKey === "1109" && 2) ||
-                            (itemKey === "1110" && 4) ||
+                            (itemKey === "1110" && 2) ||
                             1,
-                        })
+                        }),
                       );
                       const totalKg = totalQty(rows);
                       const orderCount =
@@ -542,7 +545,10 @@ export default function PerItemQtyDashboard({ orders = [] }) {
                                           {(r.itemKey === "1107" ||
                                             r.itemKey === "1108" ||
                                             r.itemKey === "1109" ||
-                                            r.itemKey === "1110") &&
+                                            r.itemKey === "1110" ||
+                                            r.itemKey === "1111" ||
+                                            r.itemKey === "1113" ||
+                                            r.itemKey === "50004") &&
                                             ` (${r.qty}p)`}
                                         </span>
                                       </td>
