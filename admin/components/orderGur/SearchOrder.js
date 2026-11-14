@@ -273,7 +273,7 @@ const SearchGurOrder = ({ onClick }) => {
   useEffect(() => {
     const privileged = ["Admin", "HR", "CEO"].includes(user?.staff_role);
     setLimits(privileged);
-    setLimit(privileged ? 30 : 30);
+    setLimit(privileged ? 400 : 30);
   }, [user]);
 
   // ✅ Firebase real-time listener
