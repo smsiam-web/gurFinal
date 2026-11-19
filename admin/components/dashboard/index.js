@@ -8,6 +8,8 @@ import LineChart from "./LineChart";
 import { db } from "@/app/utils/firebase";
 import OrderSourceCounter from "./OrderSourceCounter";
 import OrderTable from "../placeGur/OrderTable";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/app/redux/slices/authSlice";
 
 const DashBoard = () => {
   const [counter, setCounter] = useState();
@@ -73,6 +75,8 @@ const DashBoard = () => {
     };
   }, []);
 
+    const user = useSelector(selectUser);
+
   return (
     <main className="h-full overflow-y-auto">
       <div className=" grid mx-auto">
@@ -87,7 +91,8 @@ const DashBoard = () => {
           <OrderOverview />
         </div>
          <div className="w-full mt-4">
-          <OrderSourceCounter />
+        {["HR"].includes(user?.staff_role) && <OrderSourceCounter />}
+          
         </div>
         <div className="grid gap-4 xl:grid-cols-2 my-4">
           <LineChart

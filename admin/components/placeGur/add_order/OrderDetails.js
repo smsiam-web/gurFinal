@@ -211,8 +211,8 @@ function OverallBadge({ level, text }) {
     level === "block"
       ? "bg-red-100 text-red-700"
       : level === "warn"
-      ? "bg-amber-100 text-amber-700"
-      : "bg-green-100 text-green-700";
+        ? "bg-amber-100 text-amber-700"
+        : "bg-green-100 text-green-700";
 
   return (
     <span className={`px-2 py-0.5 rounded text-xs font-semibold ${cls}`}>
@@ -249,7 +249,7 @@ function FraudPanel({ data, loading, onOverallChange }) {
         acc.total += Number(c?.total || 0);
         return acc;
       },
-      { success: 0, cancel: 0, total: 0 }
+      { success: 0, cancel: 0, total: 0 },
     );
 
     const rate =
@@ -280,9 +280,7 @@ function FraudPanel({ data, loading, onOverallChange }) {
   if (loading) {
     return (
       <div className="p-3 border rounded bg-white">
-        <div className="text-sm text-gray-600">
-          Checking customer history…
-        </div>
+        <div className="text-sm text-gray-600">Checking customer history…</div>
       </div>
     );
   }
@@ -309,7 +307,7 @@ function FraudPanel({ data, loading, onOverallChange }) {
                 label: "Other",
                 value: Math.max(
                   0,
-                  overall.total - overall.success - overall.cancel
+                  overall.total - overall.success - overall.cancel,
                 ),
                 color: colorOther,
               },
@@ -549,16 +547,11 @@ function useCustomerAutofill() {
                   id: orderSnap.id,
                   created_at:
                     orderData.created_at || orderData.createdAt || null,
-                  items: Array.isArray(orderData.items)
-                    ? orderData.items
-                    : [],
+                  items: Array.isArray(orderData.items) ? orderData.items : [],
+                  status: orderData.status,
                 };
               } catch (orderError) {
-                console.error(
-                  "Failed to load previous order:",
-                  id,
-                  orderError
-                );
+                console.error("Failed to load previous order:", id, orderError);
 
                 return {
                   id: String(id),
@@ -566,7 +559,7 @@ function useCustomerAutofill() {
                   items: [],
                 };
               }
-            })
+            }),
           );
 
           orderResults.sort((a, b) => {
@@ -581,15 +574,13 @@ function useCustomerAutofill() {
             return dateB - dateA;
           });
 
-          if (
-            aliveRef.current &&
-            currentPhoneRef.current === requested
-          ) {
+          if (aliveRef.current && currentPhoneRef.current === requested) {
             setCustomerHistory({
               createdAt: d.created_at || null,
               updatedAt: d.updated_at || null,
               orderIds,
               orders: orderResults,
+              status: d.status,
             });
           }
         } else {
@@ -613,10 +604,7 @@ function useCustomerAutofill() {
           }
         }
 
-        if (
-          !aliveRef.current ||
-          currentPhoneRef.current !== requested
-        ) {
+        if (!aliveRef.current || currentPhoneRef.current !== requested) {
           return;
         }
 
@@ -686,8 +674,6 @@ const AddressFields = ({ prefix }) => {
   );
 };
 
-
-
 /* ---------------------------- Product Card for Items ---------------------------- */
 const ItemCard = ({ index, onRemove }) => {
   useLineTotalsAutoCompute(index);
@@ -711,11 +697,18 @@ const ItemCard = ({ index, onRemove }) => {
       <div className="grid grid-cols-3 gap-3">
         <div className="col-span-2">
           <span className="block text-sm">Quantity</span>
-          <FormInput name={`items[${index}].quantity`} type="number" placeholder="1" />
+          <FormInput
+            name={`items[${index}].quantity`}
+            type="number"
+            placeholder="1"
+          />
         </div>
         <div className="col-span-1">
           <span className="block text-sm">Unit</span>
-          <FormInput name={`items[${index}]?.attributes?.Unit`} placeholder="pc" />
+          <FormInput
+            name={`items[${index}]?.attributes?.Unit`}
+            placeholder="pc"
+          />
         </div>
       </div>
 
@@ -724,16 +717,28 @@ const ItemCard = ({ index, onRemove }) => {
           <span className="block text-sm">Price</span>
           <div className="grid grid-cols-3 gap-2">
             <div className="col-span-1">
-              <FormDropdown name={`items[${index}].currency`} items={CURRENCY} placeholder="BDT" />
+              <FormDropdown
+                name={`items[${index}].currency`}
+                items={CURRENCY}
+                placeholder="BDT"
+              />
             </div>
             <div className="col-span-2">
-              <FormInput name={`items[${index}].price`} type="number" placeholder="0.00" />
+              <FormInput
+                name={`items[${index}].price`}
+                type="number"
+                placeholder="0.00"
+              />
             </div>
           </div>
         </div>
         <div>
           <span className="block text-sm">Total</span>
-          <FormInput name={`items[${index}].line_total`} type="number" readOnly />
+          <FormInput
+            name={`items[${index}].line_total`}
+            type="number"
+            readOnly
+          />
           <Subtle>auto price × qty</Subtle>
         </div>
       </div>
@@ -776,7 +781,7 @@ const AllProductsGrid = () => {
               .filter(
                 (p) =>
                   p?.categories?.[0]?.id === "OrganicFood" &&
-                  p?.isPublished === true
+                  p?.isPublished === true,
               );
 
             setProducts(rows);
@@ -786,7 +791,7 @@ const AllProductsGrid = () => {
             console.error("Fallback snapshot error:", err);
             setError(err);
             setLoading(false);
-          }
+          },
         );
     };
 
@@ -809,10 +814,10 @@ const AllProductsGrid = () => {
             (err) => {
               console.error(
                 "Server-side filter failed, switching to fallback:",
-                err
+                err,
               );
               fallbackToClientFilter();
-            }
+            },
           );
       } catch (err) {
         console.error("Query failed, using fallback:", err);
@@ -866,7 +871,7 @@ const AllProductsGrid = () => {
 
       setFieldValue("items", next, false);
     },
-    [items, idxByPid, setFieldValue]
+    [items, idxByPid, setFieldValue],
   );
 
   const handleQtyChange = useCallback(
@@ -884,7 +889,7 @@ const AllProductsGrid = () => {
         upsertItem(p, qty);
       }
     },
-    [upsertItem]
+    [upsertItem],
   );
 
   if (loading) {
@@ -925,7 +930,7 @@ const AllProductsGrid = () => {
       {products.map((p) => {
         const pid = String(p.id || p.sku || "");
         const idx = idxByPid.get(pid);
-        const currentQty = idx !== undefined ? items[idx]?.quantity ?? 0 : 0;
+        const currentQty = idx !== undefined ? (items[idx]?.quantity ?? 0) : 0;
         const displayQty =
           Number.isFinite(currentQty) && currentQty > 0 ? currentQty : "";
 
@@ -998,11 +1003,7 @@ const ItemsBlock = () => {
           render={({ remove }) => (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {items.map((_, idx) => (
-                <ItemCard
-                  key={idx}
-                  index={idx}
-                  onRemove={() => remove(idx)}
-                />
+                <ItemCard key={idx} index={idx} onRemove={() => remove(idx)} />
               ))}
             </div>
           )}
@@ -1017,9 +1018,7 @@ function formatOrderDate(value) {
   if (!value) return "Date unavailable";
 
   const date =
-    typeof value?.toDate === "function"
-      ? value.toDate()
-      : new Date(value);
+    typeof value?.toDate === "function" ? value.toDate() : new Date(value);
 
   if (Number.isNaN(date.getTime())) return "Date unavailable";
 
@@ -1040,15 +1039,86 @@ function getOrderWeight(items = []) {
     const kg =
       unitWeight > 0
         ? quantity * unitWeight
-        : String(item?.unit || item?.attributes?.Unit || "").toLowerCase() === "kg"
-        ? quantity
-        : 0;
+        : String(item?.unit || item?.attributes?.Unit || "").toLowerCase() ===
+            "kg"
+          ? quantity
+          : 0;
 
     return sum + kg;
   }, 0);
 }
 
+const ORDER_STATUS_CONFIG = {
+  pending: {
+    label: "Pending",
+    className: "bg-amber-50 text-amber-700 border-amber-200",
+    dot: "bg-amber-500",
+  },
+  processing: {
+    label: "Processing",
+    className: "bg-blue-50 text-blue-700 border-blue-200",
+    dot: "bg-blue-500",
+  },
+  shipped: {
+    label: "Shipped",
+    className: "bg-violet-50 text-violet-700 border-violet-200",
+    dot: "bg-violet-500",
+  },
+  delivered: {
+    label: "Delivered",
+    className: "bg-green-50 text-green-700 border-green-200",
+    dot: "bg-green-500",
+  },
+  paid: {
+    label: "Paid",
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    dot: "bg-emerald-500",
+  },
+  fulfilled: {
+    label: "Fulfilled",
+    className: "bg-teal-50 text-teal-700 border-teal-200",
+    dot: "bg-teal-500",
+  },
+  cancelled: {
+    label: "Cancelled",
+    className: "bg-red-50 text-red-700 border-red-200",
+    dot: "bg-red-500",
+  },
+  refunded: {
+    label: "Refunded",
+    className: "bg-gray-100 text-gray-700 border-gray-200",
+    dot: "bg-gray-500",
+  },
+  partially_refunded: {
+    label: "Partially Refunded",
+    className: "bg-orange-50 text-orange-700 border-orange-200",
+    dot: "bg-orange-500",
+  },
+};
+
+function OrderStatusBadge({ status }) {
+  const key = String(status || "")
+    .toLowerCase()
+    .trim();
+
+  const config = ORDER_STATUS_CONFIG[key] || {
+    label: status || "Unknown",
+    className: "bg-gray-100 text-gray-600 border-gray-200",
+    dot: "bg-gray-400",
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${config.className}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${config.dot}`} />
+      {config.label}
+    </span>
+  );
+}
+
 function CustomerOrderHistoryCard({ history, loading }) {
+  console.log(history)
   if (loading) {
     return (
       <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4 shadow-sm">
@@ -1094,9 +1164,7 @@ function CustomerOrderHistoryCard({ history, loading }) {
             <h3 className="font-semibold text-gray-800">
               Customer Order History
             </h3>
-            <p className="text-xs text-gray-500">
-              Previous purchase summary
-            </p>
+            <p className="text-xs text-gray-500">Previous purchase summary</p>
           </div>
         </div>
 
@@ -1148,9 +1216,13 @@ function CustomerOrderHistoryCard({ history, loading }) {
                   className="rounded-xl border border-gray-100 bg-white p-3"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-gray-800">
-                      {order.id}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-bold text-gray-800">
+                        {order.id}
+                      </span>
+
+                      <OrderStatusBadge status={orders.status} />
+                    </div>
 
                     <span className="text-xs text-gray-500">
                       {formatOrderDate(order.created_at)}
@@ -1204,7 +1276,8 @@ function CustomerOrderHistoryCard({ history, loading }) {
             </p>
 
             <p className="mt-1 text-xs text-gray-400">
-              Customer record exists, but saved order documents could not be loaded.
+              Customer record exists, but saved order documents could not be
+              loaded.
             </p>
 
             {history.orderIds?.length > 0 && (
@@ -1218,8 +1291,6 @@ function CustomerOrderHistoryCard({ history, loading }) {
     </div>
   );
 }
-
-
 
 const OrderDetailsFormUp = () => {
   const { values, setFieldValue } = useFormikContext();
@@ -1240,22 +1311,22 @@ const OrderDetailsFormUp = () => {
       setFieldValue(
         "meta.ship_recommendation",
         overall?.decision || null,
-        false
+        false,
       );
 
       setFieldValue(
         "meta.cancel_ratio_overall",
         overall?.cancel_rate_pct ?? null,
-        false
+        false,
       );
 
       setFieldValue(
         "meta.success_ratio_overall",
         overall?.success_rate_pct ?? null,
-        false
+        false,
       );
     },
-    [setFieldValue]
+    [setFieldValue],
   );
 
   const shipRecommendation = getIn(values, "meta.ship_recommendation");
@@ -1278,7 +1349,6 @@ const OrderDetailsFormUp = () => {
 
   return (
     <div className="max-h-full space-y-4">
-
       {/* BASICS */}
       <div className="grid grid-cols-2 gap-3 p-3 border rounded">
         <SectionTitle>Order Basics</SectionTitle>
@@ -1336,10 +1406,7 @@ const OrderDetailsFormUp = () => {
             <span>Phone</span>
 
             <div className="flex gap-2">
-              <FormInput
-                name="customer.phone"
-                placeholder="01XXXXXXXXX"
-              />
+              <FormInput name="customer.phone" placeholder="01XXXXXXXXX" />
 
               {phoneDigits.length === 11 ? (
                 <Link
@@ -1372,10 +1439,7 @@ const OrderDetailsFormUp = () => {
 
           <div className="col-span-2 sm:col-span-1">
             <span>Name</span>
-            <FormInput
-              name="customer.name"
-              placeholder="Mr. Customer"
-            />
+            <FormInput name="customer.name" placeholder="Mr. Customer" />
           </div>
         </div>
 
@@ -1392,8 +1456,8 @@ const OrderDetailsFormUp = () => {
                   shipRecommendation.includes("NOT")
                     ? "bg-red-50 border-red-300 text-red-700"
                     : shipRecommendation.includes("caution")
-                    ? "bg-amber-50 border-amber-300 text-amber-800"
-                    : "bg-green-50 border-green-300 text-green-800"
+                      ? "bg-amber-50 border-amber-300 text-amber-800"
+                      : "bg-green-50 border-green-300 text-green-800"
                 }`}
               />
             </div>
@@ -1447,10 +1511,7 @@ const OrderDetailsFormUp = () => {
             render={({ push, remove }) => (
               <div className="space-y-2">
                 {(getIn(values, "discounts") || []).map((_, idx) => (
-                  <div
-                    key={idx}
-                    className="grid grid-cols-5 gap-2 items-end"
-                  >
+                  <div key={idx} className="grid grid-cols-5 gap-2 items-end">
                     <div className="col-span-3">
                       <span>Code</span>
                       <FormInput
@@ -1527,20 +1588,12 @@ const OrderDetailsFormUp = () => {
 
           <div>
             <span>Payment</span>
-            <FormInput
-              name="totals.payment"
-              type="number"
-              placeholder="0.00"
-            />
+            <FormInput name="totals.payment" type="number" placeholder="0.00" />
           </div>
 
           <div>
             <span>COD Total</span>
-            <FormInput
-              name="totals.cod"
-              type="number"
-              placeholder="0.00"
-            />
+            <FormInput name="totals.cod" type="number" placeholder="0.00" />
           </div>
         </div>
       </div>
@@ -1613,7 +1666,7 @@ const OrderDetailsFormUp = () => {
                           Remove
                         </button>
                       </div>
-                    )
+                    ),
                   )}
 
                   <button
@@ -1647,10 +1700,7 @@ const OrderDetailsFormUp = () => {
 
           <div>
             <span>Notes</span>
-            <AppTextArea
-              name="notes"
-              placeholder="Internal notes"
-            />
+            <AppTextArea name="notes" placeholder="Internal notes" />
           </div>
         </div>
       </div>
