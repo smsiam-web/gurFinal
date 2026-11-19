@@ -18,6 +18,7 @@ import {
 } from "@/lib/validationSchema";
 import { updateCounters } from "@/lib/counters";
 import { ERROR_MEANINGS } from "@/admin/configs";
+import { updateOrderSummary } from "@/lib/orderSummary";
 
 // Normalize values → IMPORTANT: grand = items - discount + shipping (schema)
 const normalizeOrder = (values) => {
@@ -91,12 +92,12 @@ const AddOrder = ({ onClick }) => {
     // Normalize + validate (schema checks grand consistency)
     const normalized = normalizeOrder(values);
 
-      const list = normalized?.items
-        .map(
-          (item, index) =>
-            `${index + 1}. ${item.title} (Qty: ${item.quantity}, Price: ${item.line_total})`,
-        )
-        .join("\n");
+    const list = normalized?.items
+      .map(
+        (item, index) =>
+          `${index + 1}. ${item.title} (Qty: ${item.quantity}, Price: ${item.line_total})`,
+      )
+      .join("\n");
 
     await orderValidationSchemaCOD.validate(normalized, { abortEarly: false });
 
@@ -249,6 +250,11 @@ const AddOrder = ({ onClick }) => {
         try {
           await db.collection("ordersGur").doc(orderID).set(orderData);
           updateCounters(orderData);
+          try {
+            await updateOrderSummary(orderData);
+          } catch (summaryError) {
+            console.error("Order summary update failed:", summaryError);
+          }
         } catch (error) {
           notifications.show({
             title: "Failed to save order",
@@ -281,20 +287,44 @@ const AddOrder = ({ onClick }) => {
       console.error("Missing phone number");
       return;
     }
+
     try {
-      await db
+      const customerRef = db
         .collection("customers")
-        .doc(values?.customer.phone)
-        .set({
+        .doc(values?.customer.phone);
+
+      await db.runTransaction(async (transaction) => {
+        const customerSnap = await transaction.get(customerRef);
+
+        const isExisting = customerSnap.exists;
+
+        const previousItems = isExisting
+          ? customerSnap.data()?.items || []
+          : [];
+
+        const mergedItems = [...new Set([...previousItems, orderID])];
+
+        const customerData = {
           customer: { ...values?.customer },
           shipping_address: { ...values?.shipping_address },
-          items: [orderID],
-          created_at: new Date().toISOString(),
-          created_user: user?.name || "admin",
-        });
-      console.log("Customer created successfully");
+          items: mergedItems,
+        };
+
+        if (isExisting) {
+          // Existing customer
+          customerData.updated_at = new Date().toISOString();
+        } else {
+          // New customer
+          customerData.created_at = new Date().toISOString();
+          customerData.created_user = user?.name || "admin";
+        }
+
+        transaction.set(customerRef, customerData, { merge: true });
+      });
+
+      console.log("Customer saved successfully");
     } catch (error) {
-      console.error("Error creating customer:", error);
+      console.error("Customer update failed:", error);
     }
   };
 

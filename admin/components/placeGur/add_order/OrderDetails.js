@@ -48,6 +48,7 @@ const COURIER = [
   { name: "SteadFast", id: "SteadFast" },
   { name: "Pathao", id: "Pathao" },
 ];
+
 const SOURCE = [
   { name: "Web", id: "Web" },
   { name: "Message", id: "Message" },
@@ -63,6 +64,7 @@ function toNumber(n, fallback = 0) {
   const v = Number(n);
   return Number.isFinite(v) ? v : fallback;
 }
+
 function digitsOnly(v) {
   return String(v ?? "").replace(/\D/g, "");
 }
@@ -70,6 +72,7 @@ function digitsOnly(v) {
 const Line = ({ h = "h-4", w = "w-full" }) => (
   <div className={`rounded bg-gray-200 ${h} ${w}`}></div>
 );
+
 const SectionSkeleton = () => (
   <div className="animate-pulse space-y-3">
     <Line h="h-4" w="w-32" />
@@ -81,9 +84,11 @@ const SectionSkeleton = () => (
     </div>
   </div>
 );
+
 function SectionTitle({ children }) {
   return <div className="font-medium text-base">{children}</div>;
 }
+
 function Subtle({ children }) {
   return <span className="text-xs text-gray-500">{children}</span>;
 }
@@ -107,7 +112,6 @@ function useTotalsAutoCompute() {
     const shipping = toNumber(getIn(values, "totals.shipping"), 0);
     const payment = toNumber(getIn(values, "totals.payment"), 0);
 
-    // grand = items - discount + shipping
     const grand = +(itemsSum - discount + shipping).toFixed(2);
     const cod = +(grand - payment).toFixed(2);
 
@@ -141,7 +145,7 @@ function mapCreateCustomer(src = {}) {
   };
 }
 
-function computeBadge({ success = 0, cancel = 0, total = 0, rawLabel = "" }) {
+function computeBadge({ success = 0, cancel = 0, total = 0 }) {
   const delivered = Number(success) || 0;
   const cancelled = Number(cancel) || 0;
   const t = Number(total) || 0;
@@ -154,6 +158,7 @@ function computeBadge({ success = 0, cancel = 0, total = 0, rawLabel = "" }) {
       cls: "bg-gray-100 text-gray-700",
       cancelPct,
     };
+
   if (delivered + cancelled < 3)
     return {
       level: "info",
@@ -161,6 +166,7 @@ function computeBadge({ success = 0, cancel = 0, total = 0, rawLabel = "" }) {
       cls: "bg-green-100 text-blue-700",
       cancelPct,
     };
+
   if (cancelPct >= 60)
     return {
       level: "block",
@@ -168,6 +174,7 @@ function computeBadge({ success = 0, cancel = 0, total = 0, rawLabel = "" }) {
       cls: "bg-red-100 text-red-700",
       cancelPct,
     };
+
   if (cancelPct >= 30)
     return {
       level: "warn",
@@ -175,6 +182,7 @@ function computeBadge({ success = 0, cancel = 0, total = 0, rawLabel = "" }) {
       cls: "bg-amber-100 text-amber-700",
       cancelPct,
     };
+
   return {
     level: "ok",
     text: "Normal",
@@ -183,16 +191,18 @@ function computeBadge({ success = 0, cancel = 0, total = 0, rawLabel = "" }) {
   };
 }
 
-const CANCEL_BLOCK_PCT = 60; // >= 60% cancel => Do NOT ship
-const CANCEL_WARN_PCT = 30; // 30–59% => caution
+const CANCEL_BLOCK_PCT = 60;
+const CANCEL_WARN_PCT = 30;
 
 function decideByCancelRatio(cancelPct) {
   if (cancelPct >= CANCEL_BLOCK_PCT) {
     return { level: "block", text: "Do NOT ship" };
   }
+
   if (cancelPct >= CANCEL_WARN_PCT) {
     return { level: "warn", text: "Ship with caution" };
   }
+
   return { level: "ok", text: "OK to ship" };
 }
 
@@ -203,6 +213,7 @@ function OverallBadge({ level, text }) {
       : level === "warn"
       ? "bg-amber-100 text-amber-700"
       : "bg-green-100 text-green-700";
+
   return (
     <span className={`px-2 py-0.5 rounded text-xs font-semibold ${cls}`}>
       {text}
@@ -210,17 +221,26 @@ function OverallBadge({ level, text }) {
   );
 }
 
+/* ----------------------- Fraud Panel ------------------------ */
 function FraudPanel({ data, loading, onOverallChange }) {
   const colorSuccess = "#22c55e";
   const colorCancel = "#ef4444";
   const colorOther = "#94a3b8";
 
-  // Aggregate overall
   const overall = useMemo(() => {
     if (!data) return null;
+
     const entries = Object.values(data || {});
-    if (!entries.length)
-      return { success: 0, cancel: 0, total: 0, rate: 0, cancelPct: 0 };
+
+    if (!entries.length) {
+      return {
+        success: 0,
+        cancel: 0,
+        total: 0,
+        rate: 0,
+        cancelPct: 0,
+      };
+    }
 
     const agg = entries.reduce(
       (acc, c) => {
@@ -231,16 +251,21 @@ function FraudPanel({ data, loading, onOverallChange }) {
       },
       { success: 0, cancel: 0, total: 0 }
     );
+
     const rate =
       agg.total > 0 ? Math.round((agg.success / agg.total) * 100) : 0;
+
     const cancelPct =
       agg.total > 0 ? Math.round((agg.cancel / agg.total) * 100) : 0;
+
     return { ...agg, rate, cancelPct };
   }, [data]);
 
   useEffect(() => {
     if (!overall || !onOverallChange) return;
+
     const decision = decideByCancelRatio(overall.cancelPct);
+
     onOverallChange({
       success: overall.success,
       cancel: overall.cancel,
@@ -255,10 +280,13 @@ function FraudPanel({ data, loading, onOverallChange }) {
   if (loading) {
     return (
       <div className="p-3 border rounded bg-white">
-        <div className="text-sm text-gray-600">Checking customer history…</div>
+        <div className="text-sm text-gray-600">
+          Checking customer history…
+        </div>
       </div>
     );
   }
+
   if (!data) return null;
 
   const entries = Object.values(data || {});
@@ -267,7 +295,7 @@ function FraudPanel({ data, loading, onOverallChange }) {
   return (
     <div className="p-3 border rounded bg-white space-y-3">
       <div className="mb-1 font-medium">Fraud / Delivery History</div>
-      {/* Overall summary */}
+
       {overall && (
         <div className="p-3 rounded-xl border bg-indigo-50 flex items-center gap-3">
           <Donut
@@ -287,6 +315,7 @@ function FraudPanel({ data, loading, onOverallChange }) {
               },
             ]}
           />
+
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <div className="font-semibold">Overall Summary</div>
@@ -295,14 +324,17 @@ function FraudPanel({ data, loading, onOverallChange }) {
                 text={decideByCancelRatio(overall.cancelPct).text}
               />
             </div>
+
             <div className="mt-1 text-sm">
               Success: <b>{overall.success}</b> · Cancel:{" "}
               <b>{overall.cancel}</b> · Total: <b>{overall.total}</b>
             </div>
+
             <div className="text-xs text-gray-700">
               Success Rate: <b>{overall.rate}%</b> · Cancel Ratio:{" "}
               <b>{overall.cancelPct}%</b>
             </div>
+
             <div className="mt-1 text-[11px] text-gray-600">
               Rules: Cancel ≥ {CANCEL_BLOCK_PCT}% ⇒ Do NOT ship ·{" "}
               {CANCEL_WARN_PCT}–{CANCEL_BLOCK_PCT - 1}% ⇒ Caution
@@ -311,7 +343,6 @@ function FraudPanel({ data, loading, onOverallChange }) {
         </div>
       )}
 
-      {/* Per-courier cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {entries.map((c, i) => {
           const success = Number(c?.success || 0);
@@ -320,13 +351,7 @@ function FraudPanel({ data, loading, onOverallChange }) {
           const other = Math.max(0, total - success - cancel);
           const rate = total > 0 ? Math.round((success / total) * 100) : 0;
 
-          // NEW: derive badge from numbers (not raw string)
-          const badge = computeBadge({
-            success,
-            cancel,
-            total,
-            rawLabel: c?.customer_rating,
-          });
+          const badge = computeBadge({ success, cancel, total });
 
           return (
             <div
@@ -343,6 +368,7 @@ function FraudPanel({ data, loading, onOverallChange }) {
                   { label: "Other", value: other, color: "#94a3b8" },
                 ]}
               />
+
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <div className="font-semibold">{c?.name || "Courier"}</div>
@@ -367,6 +393,7 @@ function FraudPanel({ data, loading, onOverallChange }) {
                     />
                     Success
                   </span>
+
                   <span className="inline-flex items-center gap-1">
                     <span
                       className="inline-block w-2 h-2 rounded"
@@ -374,6 +401,7 @@ function FraudPanel({ data, loading, onOverallChange }) {
                     />
                     Cancel
                   </span>
+
                   <span className="inline-flex items-center gap-1">
                     <span
                       className="inline-block w-2 h-2 rounded"
@@ -394,26 +422,29 @@ function FraudPanel({ data, loading, onOverallChange }) {
 /* --------------------- Autofill hook + fraud ------------------------ */
 function useCustomerAutofill() {
   const { values, setFieldValue } = useFormikContext();
-  const [isLoadingCustomer, setIsLoadingCustomer] = useState(false);
 
-  // fraud states
+  const [isLoadingCustomer, setIsLoadingCustomer] = useState(false);
+  const [customerHistory, setCustomerHistory] = useState(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
   const [fraudData, setFraudData] = useState(null);
   const [isCheckingFraud, setIsCheckingFraud] = useState(false);
 
   const phoneDigits = digitsOnly(getIn(values, "customer.phone"));
 
-  // Only-once fraud-check (debounced)
   const lastFraudCheckedRef = useRef(null);
   const fraudTimerRef = useRef(null);
 
   const doFraudCheck = useCallback(async (msisdn) => {
     try {
       setIsCheckingFraud(true);
+
       const r = await fetch("/api/fraud-check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mobile: msisdn }),
       });
+
       const data = await r.json();
       setFraudData(data?.data || null);
     } catch (err) {
@@ -429,6 +460,7 @@ function useCustomerAutofill() {
     if (lastFraudCheckedRef.current === phoneDigits) return;
 
     if (fraudTimerRef.current) clearTimeout(fraudTimerRef.current);
+
     fraudTimerRef.current = setTimeout(() => {
       lastFraudCheckedRef.current = phoneDigits;
       doFraudCheck(phoneDigits);
@@ -439,7 +471,6 @@ function useCustomerAutofill() {
     };
   }, [phoneDigits, doFraudCheck]);
 
-  // Customer autofill
   const timerRef = useRef(null);
   const lastFetchedRef = useRef(null);
   const aliveRef = useRef(true);
@@ -447,8 +478,10 @@ function useCustomerAutofill() {
 
   useEffect(() => {
     aliveRef.current = true;
+
     return () => {
       aliveRef.current = false;
+
       if (timerRef.current) clearTimeout(timerRef.current);
       if (fraudTimerRef.current) clearTimeout(fraudTimerRef.current);
     };
@@ -459,21 +492,30 @@ function useCustomerAutofill() {
   }, [phoneDigits]);
 
   useEffect(() => {
-    if (phoneDigits.length !== 11 || !/^01/.test(phoneDigits)) return;
+    if (phoneDigits.length !== 11 || !/^01/.test(phoneDigits)) {
+      setCustomerHistory(null);
+      setIsLoadingHistory(false);
+      return;
+    }
+
     if (lastFetchedRef.current === phoneDigits) return;
 
     if (timerRef.current) clearTimeout(timerRef.current);
 
     timerRef.current = setTimeout(async () => {
       const requested = phoneDigits;
+
       setIsLoadingCustomer(true);
+      setIsLoadingHistory(true);
+      setCustomerHistory(null);
 
       try {
-        let snap = await db.collection("customers").doc(requested).get();
+        const snap = await db.collection("customers").doc(requested).get();
         let payload = null;
 
         if (snap.exists) {
           const d = snap.data() || {};
+
           payload = {
             name: d?.customer?.name || "",
             phone: d?.customer?.phone || requested,
@@ -482,11 +524,80 @@ function useCustomerAutofill() {
             state: d?.shipping_address?.state || "",
             country: d?.shipping_address?.country || "",
           };
+
+          const orderIds = Array.isArray(d?.items) ? d.items : [];
+
+          const orderResults = await Promise.all(
+            orderIds.map(async (id) => {
+              try {
+                const orderSnap = await db
+                  .collection("ordersGur")
+                  .doc(String(id))
+                  .get();
+
+                if (!orderSnap.exists) {
+                  return {
+                    id: String(id),
+                    created_at: null,
+                    items: [],
+                  };
+                }
+
+                const orderData = orderSnap.data() || {};
+
+                return {
+                  id: orderSnap.id,
+                  created_at:
+                    orderData.created_at || orderData.createdAt || null,
+                  items: Array.isArray(orderData.items)
+                    ? orderData.items
+                    : [],
+                };
+              } catch (orderError) {
+                console.error(
+                  "Failed to load previous order:",
+                  id,
+                  orderError
+                );
+
+                return {
+                  id: String(id),
+                  created_at: null,
+                  items: [],
+                };
+              }
+            })
+          );
+
+          orderResults.sort((a, b) => {
+            const dateA = a.created_at?.toDate
+              ? a.created_at.toDate().getTime()
+              : new Date(a.created_at || 0).getTime();
+
+            const dateB = b.created_at?.toDate
+              ? b.created_at.toDate().getTime()
+              : new Date(b.created_at || 0).getTime();
+
+            return dateB - dateA;
+          });
+
+          if (
+            aliveRef.current &&
+            currentPhoneRef.current === requested
+          ) {
+            setCustomerHistory({
+              createdAt: d.created_at || null,
+              updatedAt: d.updated_at || null,
+              orderIds,
+              orders: orderResults,
+            });
+          }
         } else {
           const cDoc = await db
             .collection("createCustomer")
             .doc(requested)
             .get();
+
           if (cDoc.exists) {
             payload = mapCreateCustomer(cDoc.data());
           } else {
@@ -495,11 +606,21 @@ function useCustomerAutofill() {
               .where("cus_contact", "==", requested)
               .limit(1)
               .get();
-            if (!q.empty) payload = mapCreateCustomer(q.docs[0].data());
+
+            if (!q.empty) {
+              payload = mapCreateCustomer(q.docs[0].data());
+            }
           }
         }
 
-        if (!aliveRef.current || currentPhoneRef.current !== requested) return;
+        if (
+          !aliveRef.current ||
+          currentPhoneRef.current !== requested
+        ) {
+          return;
+        }
+
+        if (!snap.exists) setCustomerHistory(null);
 
         lastFetchedRef.current = requested;
 
@@ -508,6 +629,7 @@ function useCustomerAutofill() {
           phone: payload?.phone || requested,
           name: payload?.name || "",
         };
+
         const nextAddr = {
           ...(getIn(values, "shipping_address") || {}),
           street: payload?.street || "",
@@ -515,12 +637,16 @@ function useCustomerAutofill() {
           state: payload?.state || "",
           country: payload?.country || "",
         };
+
         setFieldValue("customer", nextCust, false);
         setFieldValue("shipping_address", nextAddr, false);
       } catch (err) {
         console.error("Failed to load customer:", err);
       } finally {
-        if (aliveRef.current) setIsLoadingCustomer(false);
+        if (aliveRef.current) {
+          setIsLoadingCustomer(false);
+          setIsLoadingHistory(false);
+        }
       }
     }, 300);
 
@@ -529,7 +655,13 @@ function useCustomerAutofill() {
     };
   }, [phoneDigits, setFieldValue, values]);
 
-  return { isLoadingCustomer, fraudData, isCheckingFraud };
+  return {
+    isLoadingCustomer,
+    fraudData,
+    isCheckingFraud,
+    customerHistory,
+    isLoadingHistory,
+  };
 }
 
 /* ----------------------- Subcomponents ---------------------- */
@@ -540,10 +672,12 @@ const AddressFields = ({ prefix }) => {
         <span>Street</span>
         <FormInput name={`${prefix}.street`} placeholder="Street, house" />
       </div>
+
       <div className="col-span-1">
         <span>City</span>
         <FormInput name={`${prefix}.city`} placeholder="City" />
       </div>
+
       <div className="col-span-1">
         <span>State / District</span>
         <FormInput name={`${prefix}.state`} placeholder="Dhaka" />
@@ -552,7 +686,9 @@ const AddressFields = ({ prefix }) => {
   );
 };
 
-/* ---------------------------- Product Card for Items (optional) ---------------------------- */
+
+
+/* ---------------------------- Product Card for Items ---------------------------- */
 const ItemCard = ({ index, onRemove }) => {
   useLineTotalsAutoCompute(index);
 
@@ -575,18 +711,11 @@ const ItemCard = ({ index, onRemove }) => {
       <div className="grid grid-cols-3 gap-3">
         <div className="col-span-2">
           <span className="block text-sm">Quantity</span>
-          <FormInput
-            name={`items[${index}].quantity`}
-            type="number"
-            placeholder="1"
-          />
+          <FormInput name={`items[${index}].quantity`} type="number" placeholder="1" />
         </div>
         <div className="col-span-1">
           <span className="block text-sm">Unit</span>
-          <FormInput
-            name={`items[${index}]?.attributes?.Unit`}
-            placeholder="pc"
-          />
+          <FormInput name={`items[${index}]?.attributes?.Unit`} placeholder="pc" />
         </div>
       </div>
 
@@ -595,28 +724,16 @@ const ItemCard = ({ index, onRemove }) => {
           <span className="block text-sm">Price</span>
           <div className="grid grid-cols-3 gap-2">
             <div className="col-span-1">
-              <FormDropdown
-                name={`items[${index}].currency`}
-                items={CURRENCY}
-                placeholder="BDT"
-              />
+              <FormDropdown name={`items[${index}].currency`} items={CURRENCY} placeholder="BDT" />
             </div>
             <div className="col-span-2">
-              <FormInput
-                name={`items[${index}].price`}
-                type="number"
-                placeholder="0.00"
-              />
+              <FormInput name={`items[${index}].price`} type="number" placeholder="0.00" />
             </div>
           </div>
         </div>
         <div>
           <span className="block text-sm">Total</span>
-          <FormInput
-            name={`items[${index}].line_total`}
-            type="number"
-            readOnly
-          />
+          <FormInput name={`items[${index}].line_total`} type="number" readOnly />
           <Subtle>auto price × qty</Subtle>
         </div>
       </div>
@@ -628,7 +745,7 @@ const ItemCard = ({ index, onRemove }) => {
   );
 };
 
-/* ---------------------------- All products (no search) ---------------------------- */
+/* ---------------------------- All products ---------------------------- */
 const AllProductsGrid = () => {
   const { values, setFieldValue } = useFormikContext();
   const [loading, setLoading] = useState(true);
@@ -636,6 +753,7 @@ const AllProductsGrid = () => {
   const [error, setError] = useState(null);
 
   const items = getIn(values, "items") || [];
+
   const idxByPid = useMemo(() => {
     const map = new Map();
     items.forEach((it, idx) => {
@@ -655,7 +773,12 @@ const AllProductsGrid = () => {
           (snap) => {
             const rows = snap.docs
               .map((d) => ({ id: d.id, ...d.data() }))
-              .filter((p) => p?.categories?.[0]?.id === "OrganicFood" && p?.isPublished === true);
+              .filter(
+                (p) =>
+                  p?.categories?.[0]?.id === "OrganicFood" &&
+                  p?.isPublished === true
+              );
+
             setProducts(rows);
             setLoading(false);
           },
@@ -675,7 +798,11 @@ const AllProductsGrid = () => {
           .orderBy("title")
           .onSnapshot(
             (snap) => {
-              const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+              const rows = snap.docs.map((d) => ({
+                id: d.id,
+                ...d.data(),
+              }));
+
               setProducts(rows);
               setLoading(false);
             },
@@ -736,6 +863,7 @@ const AllProductsGrid = () => {
       } else {
         next.push(payload);
       }
+
       setFieldValue("items", next, false);
     },
     [items, idxByPid, setFieldValue]
@@ -744,11 +872,14 @@ const AllProductsGrid = () => {
   const handleQtyChange = useCallback(
     (p) => (e) => {
       const raw = e?.target?.value;
+
       if (raw === "" || raw === null || raw === undefined) {
         upsertItem(p, 0);
         return;
       }
+
       const qty = Number(raw);
+
       if (Number.isFinite(qty)) {
         upsertItem(p, qty);
       }
@@ -772,6 +903,7 @@ const AllProductsGrid = () => {
       </div>
     );
   }
+
   if (error) {
     return (
       <div className="p-4 text-center border rounded-2xl bg-red-50 text-red-600 text-sm">
@@ -779,6 +911,7 @@ const AllProductsGrid = () => {
       </div>
     );
   }
+
   if (!products || products.length === 0) {
     return (
       <div className="p-4 text-center border rounded-2xl bg-gray-50 text-gray-500 text-sm">
@@ -799,6 +932,7 @@ const AllProductsGrid = () => {
         const unit = p?.attributes?.Unit || p.unit || "kg";
         const currency = p?.variants?.[0]?.currency || p.currency || "BDT";
         const price = Number(p?.variants?.[0]?.price || p.price || 0);
+
         const totalPreview =
           Number.isFinite(currentQty) && currentQty > 0
             ? +(price * currentQty).toFixed(2)
@@ -858,14 +992,17 @@ const ItemsBlock = () => {
       <div className="font-medium text-base">Items</div>
       <AllProductsGrid />
 
-      {/* Optional editable item cards */}
       {false && (
         <FieldArray
           name="items"
           render={({ remove }) => (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {items.map((_, idx) => (
-                <ItemCard key={idx} index={idx} onRemove={() => remove(idx)} />
+                <ItemCard
+                  key={idx}
+                  index={idx}
+                  onRemove={() => remove(idx)}
+                />
               ))}
             </div>
           )}
@@ -875,28 +1012,243 @@ const ItemsBlock = () => {
   );
 };
 
-/* ------------------------- Main ----------------------------- */
+/* ---------------- Customer Order History ------------------- */
+function formatOrderDate(value) {
+  if (!value) return "Date unavailable";
+
+  const date =
+    typeof value?.toDate === "function"
+      ? value.toDate()
+      : new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "Date unavailable";
+
+  return new Intl.DateTimeFormat("en-BD", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function getOrderWeight(items = []) {
+  return items.reduce((sum, item) => {
+    const quantity = toNumber(item?.quantity, 0);
+    const unitWeight = toNumber(item?.unitWgt, 0);
+
+    const kg =
+      unitWeight > 0
+        ? quantity * unitWeight
+        : String(item?.unit || item?.attributes?.Unit || "").toLowerCase() === "kg"
+        ? quantity
+        : 0;
+
+    return sum + kg;
+  }, 0);
+}
+
+function CustomerOrderHistoryCard({ history, loading }) {
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4 shadow-sm">
+        <div className="flex items-center gap-2 text-sm font-medium text-indigo-700">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
+          Loading customer order history...
+        </div>
+
+        <div className="mt-3 space-y-2">
+          <Line h="h-4" w="w-1/2" />
+          <Line h="h-3" w="w-3/4" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!history) return null;
+
+  const orders = history.orders || [];
+  const latestOrder = orders[0];
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-blue-50 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-indigo-100 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+              />
+            </svg>
+          </span>
+
+          <div>
+            <h3 className="font-semibold text-gray-800">
+              Customer Order History
+            </h3>
+            <p className="text-xs text-gray-500">
+              Previous purchase summary
+            </p>
+          </div>
+        </div>
+
+        <span className="rounded-full border border-indigo-100 bg-white px-3 py-1 text-xs font-semibold text-indigo-700">
+          {orders.length} {orders.length === 1 ? "Order" : "Orders"}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-white bg-white/90 p-3">
+          <p className="text-xs text-gray-500">Customer Since</p>
+          <p className="mt-1 text-sm font-semibold text-gray-800">
+            {formatOrderDate(history.createdAt)}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-white bg-white/90 p-3">
+          <p className="text-xs text-gray-500">Last Order</p>
+          <p className="mt-1 text-sm font-semibold text-gray-800">
+            {latestOrder
+              ? formatOrderDate(latestOrder.created_at)
+              : "No previous order found"}
+          </p>
+        </div>
+      </div>
+
+      <div className="px-3 pb-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500">
+            Previous Orders
+          </h4>
+
+          {history.updatedAt && (
+            <span className="text-[10px] text-gray-400">
+              Customer updated: {formatOrderDate(history.updatedAt)}
+            </span>
+          )}
+        </div>
+
+        {orders.length > 0 ? (
+          <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+            {orders.map((order) => {
+              const orderItems = Array.isArray(order.items) ? order.items : [];
+              const weight = getOrderWeight(orderItems);
+
+              return (
+                <div
+                  key={order.id}
+                  className="rounded-xl border border-gray-100 bg-white p-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-gray-800">
+                      {order.id}
+                    </span>
+
+                    <span className="text-xs text-gray-500">
+                      {formatOrderDate(order.created_at)}
+                    </span>
+                  </div>
+
+                  {orderItems.length > 0 ? (
+                    <div className="mt-2 space-y-1.5">
+                      {orderItems.map((item, index) => (
+                        <div
+                          key={`${order.id}-${index}`}
+                          className="flex items-start justify-between gap-3 text-xs"
+                        >
+                          <span className="min-w-0 flex-1 text-gray-600">
+                            {item.title || item.name || "Product"}
+                            <span className="ml-1 text-gray-400">
+                              × {toNumber(item.quantity, 0)}
+                            </span>
+                          </span>
+
+                          <span className="shrink-0 font-medium text-gray-700">
+                            {toNumber(item.unitWgt, 0) > 0
+                              ? `${(
+                                  toNumber(item.unitWgt, 0) *
+                                  toNumber(item.quantity, 0)
+                                ).toFixed(2)} kg`
+                              : item.unit || item?.attributes?.Unit || ""}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-gray-400">
+                      Item details unavailable for this order.
+                    </p>
+                  )}
+
+                  {weight > 0 && (
+                    <div className="mt-2 flex justify-end border-t border-gray-100 pt-2 text-xs font-semibold text-indigo-700">
+                      Total weight: {weight.toFixed(2)} kg
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-indigo-200 bg-white/70 p-4 text-center">
+            <p className="text-sm font-medium text-gray-600">
+              No previous order details found
+            </p>
+
+            <p className="mt-1 text-xs text-gray-400">
+              Customer record exists, but saved order documents could not be loaded.
+            </p>
+
+            {history.orderIds?.length > 0 && (
+              <p className="mt-2 break-words text-[11px] text-gray-500">
+                Saved Order IDs: {history.orderIds.join(", ")}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+
 const OrderDetailsFormUp = () => {
   const { values, setFieldValue } = useFormikContext();
 
   useTotalsAutoCompute();
-  const { isLoadingCustomer, fraudData, isCheckingFraud } =
-    useCustomerAutofill();
 
-  // keep overall decision mirrored into form meta*
+  const {
+    isLoadingCustomer,
+    fraudData,
+    isCheckingFraud,
+    customerHistory,
+    isLoadingHistory,
+  } = useCustomerAutofill();
+
+  // Keep overall decision mirrored into form meta
   const handleOverallChange = useCallback(
     (overall) => {
-      // write into form meta for later usage
       setFieldValue(
         "meta.ship_recommendation",
         overall?.decision || null,
         false
       );
+
       setFieldValue(
         "meta.cancel_ratio_overall",
         overall?.cancel_rate_pct ?? null,
         false
       );
+
       setFieldValue(
         "meta.success_ratio_overall",
         overall?.success_rate_pct ?? null,
@@ -906,24 +1258,31 @@ const OrderDetailsFormUp = () => {
     [setFieldValue]
   );
 
-  // derived read-only view from form meta (so it survives re-render)
   const shipRecommendation = getIn(values, "meta.ship_recommendation");
   const overallCancelPct = getIn(values, "meta.cancel_ratio_overall");
   const phoneDigits = digitsOnly(getIn(values, "customer.phone"));
-    const handleCopy = async () => {
-    await navigator.clipboard.writeText(phoneDigits);
-          notifications.show({
-            title: "Success",
-            message: `Phone number: ${phoneDigits} copied.`,
-            color: "green",
-          });
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(phoneDigits);
+
+      notifications.show({
+        title: "Success",
+        message: `Phone number: ${phoneDigits} copied.`,
+        color: "green",
+      });
+    } catch (error) {
+      console.error("Copy failed:", error);
+    }
   };
 
   return (
     <div className="max-h-full space-y-4">
+
       {/* BASICS */}
       <div className="grid grid-cols-2 gap-3 p-3 border rounded">
         <SectionTitle>Order Basics</SectionTitle>
+
         <div className="col-span-2 grid grid-cols-2 gap-3">
           <div>
             <span>Status</span>
@@ -933,6 +1292,7 @@ const OrderDetailsFormUp = () => {
               items={ORDER_STATUS}
             />
           </div>
+
           <div>
             <span>Currency</span>
             <FormDropdown
@@ -956,6 +1316,15 @@ const OrderDetailsFormUp = () => {
           </div>
         )}
 
+        {/* CUSTOMER ORDER HISTORY CARD */}
+        {/* Card appears above the phone number field */}
+        {phoneDigits.length === 11 && (
+          <CustomerOrderHistoryCard
+            history={customerHistory}
+            loading={isLoadingHistory}
+          />
+        )}
+
         <div
           className={`grid grid-cols-2 gap-3 ${
             isLoadingCustomer
@@ -965,8 +1334,13 @@ const OrderDetailsFormUp = () => {
         >
           <div className="col-span-2 sm:col-span-1">
             <span>Phone</span>
+
             <div className="flex gap-2">
-              <FormInput name="customer.phone" placeholder="01XXXXXXXXX" />
+              <FormInput
+                name="customer.phone"
+                placeholder="01XXXXXXXXX"
+              />
+
               {phoneDigits.length === 11 ? (
                 <Link
                   className="bg-blue-400 inline-block mb-4 items-center px-5 py-3 rounded-md cursor-pointer hover:bg-blue-500 text-sm text-white font-medium hover:shadow-lg transition-all duration-300"
@@ -975,37 +1349,42 @@ const OrderDetailsFormUp = () => {
                   <IoCall size={20} />
                 </Link>
               ) : (
-                <span className="bg-blue-300 inline-block mb-4 items-center px-5 py-3 rounded-md  text-sm text-white font-medium">
+                <span className="bg-blue-300 inline-block mb-4 items-center px-5 py-3 rounded-md text-sm text-white font-medium">
                   <IoCall size={20} />
                 </span>
               )}
+
               {phoneDigits.length === 11 ? (
-                <span
+                <button
+                  type="button"
                   className="bg-green-400 inline-block mb-4 items-center px-5 py-3 rounded-md cursor-pointer hover:bg-green-500 text-sm text-white font-medium hover:shadow-lg transition-all duration-300"
                   onClick={handleCopy}
                 >
-                  <BiCopy  size={20} />
-                </span>
+                  <BiCopy size={20} />
+                </button>
               ) : (
-                <span className="bg-green-300 inline-block mb-4 items-center px-5 py-3 rounded-md  text-sm text-white font-medium">
-                  <BiCopy  size={20} />
+                <span className="bg-green-300 inline-block mb-4 items-center px-5 py-3 rounded-md text-sm text-white font-medium">
+                  <BiCopy size={20} />
                 </span>
               )}
             </div>
           </div>
+
           <div className="col-span-2 sm:col-span-1">
             <span>Name</span>
-            <FormInput name="customer.name" placeholder="Mr. Customer" />
+            <FormInput
+              name="customer.name"
+              placeholder="Mr. Customer"
+            />
           </div>
         </div>
 
-
-
-        {/* Read-only Ship Recommendation (fed from overall) */}
+        {/* Read-only Ship Recommendation */}
         {shipRecommendation && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
             <div className="col-span-1">
               <span>Ship Recommendation</span>
+
               <input
                 value={shipRecommendation}
                 readOnly
@@ -1018,8 +1397,10 @@ const OrderDetailsFormUp = () => {
                 }`}
               />
             </div>
+
             <div className="col-span-1">
               <span>Overall Cancel Ratio (%)</span>
+
               <input
                 value={overallCancelPct ?? ""}
                 readOnly
@@ -1060,12 +1441,16 @@ const OrderDetailsFormUp = () => {
       <div className="grid grid-cols-2 gap-3 p-3 border rounded">
         <div className="space-y-2">
           <SectionTitle>Discounts</SectionTitle>
+
           <FieldArray
             name="discounts"
             render={({ push, remove }) => (
               <div className="space-y-2">
                 {(getIn(values, "discounts") || []).map((_, idx) => (
-                  <div key={idx} className="grid grid-cols-5 gap-2 items-end">
+                  <div
+                    key={idx}
+                    className="grid grid-cols-5 gap-2 items-end"
+                  >
                     <div className="col-span-3">
                       <span>Code</span>
                       <FormInput
@@ -1073,6 +1458,7 @@ const OrderDetailsFormUp = () => {
                         placeholder="WELCOME10"
                       />
                     </div>
+
                     <div className="col-span-2">
                       <span>Amount</span>
                       <FormInput
@@ -1081,6 +1467,7 @@ const OrderDetailsFormUp = () => {
                         placeholder="0.00"
                       />
                     </div>
+
                     <div className="col-span-5">
                       <button
                         type="button"
@@ -1092,6 +1479,7 @@ const OrderDetailsFormUp = () => {
                     </div>
                   </div>
                 ))}
+
                 <button
                   type="button"
                   className="text-sm underline"
@@ -1106,11 +1494,13 @@ const OrderDetailsFormUp = () => {
 
         <div className="space-y-2">
           <SectionTitle>Totals</SectionTitle>
+
           <div>
             <span>Items Subtotal</span>
             <FormInput name="totals.items" type="number" readOnly />
             <Subtle>Auto-calculated from line totals</Subtle>
           </div>
+
           <div>
             <span>Discount</span>
             <FormInput
@@ -1119,6 +1509,7 @@ const OrderDetailsFormUp = () => {
               placeholder="0.00"
             />
           </div>
+
           <div>
             <span>Shipping</span>
             <FormInput
@@ -1127,18 +1518,29 @@ const OrderDetailsFormUp = () => {
               placeholder="0.00"
             />
           </div>
+
           <div>
             <span>Grand Total</span>
             <FormInput name="totals.grand" type="number" readOnly />
             <Subtle>items - discount + shipping</Subtle>
           </div>
+
           <div>
             <span>Payment</span>
-            <FormInput name="totals.payment" type="number" placeholder="0.00" />
+            <FormInput
+              name="totals.payment"
+              type="number"
+              placeholder="0.00"
+            />
           </div>
+
           <div>
             <span>COD Total</span>
-            <FormInput name="totals.cod" type="number" placeholder="0.00" />
+            <FormInput
+              name="totals.cod"
+              type="number"
+              placeholder="0.00"
+            />
           </div>
         </div>
       </div>
@@ -1147,6 +1549,7 @@ const OrderDetailsFormUp = () => {
       <div className="grid grid-cols-2 gap-3 p-3 border rounded">
         <div className="space-y-3">
           <SectionTitle>Payment</SectionTitle>
+
           <div>
             <span>Method</span>
             <FormDropdown
@@ -1155,6 +1558,7 @@ const OrderDetailsFormUp = () => {
               items={PAYMENT_METHODS}
             />
           </div>
+
           <div>
             <span>Status</span>
             <FormDropdown
@@ -1163,6 +1567,7 @@ const OrderDetailsFormUp = () => {
               items={PAYMENT_STATUS}
             />
           </div>
+
           <div>
             <span>Transaction ID</span>
             <FormInput
@@ -1174,6 +1579,7 @@ const OrderDetailsFormUp = () => {
 
         <div className="space-y-3">
           <SectionTitle>Fulfillment</SectionTitle>
+
           <div>
             <span>Courier</span>
             <FormDropdown
@@ -1183,8 +1589,10 @@ const OrderDetailsFormUp = () => {
               defaultValue={"SteadFast"}
             />
           </div>
+
           <div>
             <span>Tracking Numbers</span>
+
             <FieldArray
               name="fulfillment.tracking_numbers"
               render={({ push, remove }) => (
@@ -1196,6 +1604,7 @@ const OrderDetailsFormUp = () => {
                           name={`fulfillment.tracking_numbers[${idx}]`}
                           placeholder="TRK..."
                         />
+
                         <button
                           type="button"
                           onClick={() => remove(idx)}
@@ -1206,6 +1615,7 @@ const OrderDetailsFormUp = () => {
                       </div>
                     )
                   )}
+
                   <button
                     type="button"
                     className="text-sm text-green-600"
@@ -1223,6 +1633,7 @@ const OrderDetailsFormUp = () => {
       {/* META & NOTES */}
       <div className="p-3 border rounded space-y-3">
         <SectionTitle>Meta & Notes</SectionTitle>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <span>Source*</span>
@@ -1233,9 +1644,13 @@ const OrderDetailsFormUp = () => {
               defaultValue={"Pathao"}
             />
           </div>
+
           <div>
             <span>Notes</span>
-            <AppTextArea name="notes" placeholder="Internal notes" />
+            <AppTextArea
+              name="notes"
+              placeholder="Internal notes"
+            />
           </div>
         </div>
       </div>

@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import PriceOverview from "./PriceOverview";
 import OrderOverview from "./OrderOverview";
 import Percentage from "./Percentage";
-import OrderTable from "../placeOrder/OrderTable";
+// import OrderTable from "../placeOrder/OrderTable";
 import LineChart from "./LineChart";
-import SalesAmountCounter from "../SalesAmountCounter";
+// import SalesAmountCounter from "../SalesAmountCounter";
 import { db } from "@/app/utils/firebase";
+import OrderSourceCounter from "./OrderSourceCounter";
+import OrderTable from "../placeGur/OrderTable";
 
 const DashBoard = () => {
   const [counter, setCounter] = useState();
@@ -84,6 +86,9 @@ const DashBoard = () => {
         <div className="w-full">
           <OrderOverview />
         </div>
+         <div className="w-full mt-4">
+          <OrderSourceCounter />
+        </div>
         <div className="grid gap-4 xl:grid-cols-2 my-4">
           <LineChart
             amount={last7DaysAmountReport}
@@ -91,6 +96,7 @@ const DashBoard = () => {
           />
           <Percentage />
         </div>
+        
         <div className="py-6 w-full ">
           <h2 className="text-title pb-3 font-medium text-lg md:text-xl">
             Recent Order
