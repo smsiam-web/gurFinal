@@ -33,7 +33,7 @@ const OrdersGur = () => {
           )} */}
         </h1>
 
-        {/* {!isHide && user.email === "smsiam696@gmail.com" && (
+        {!isHide && user.email === "smsiam696@gmail.com" && (
           <PerItemQtyDashboard orders={orders} />
         )}
 
@@ -42,7 +42,7 @@ const OrdersGur = () => {
         )}
         {!isHide && user.email === "mdtanbirul71@gmail.com" && (
           <PerItemQtyDashboard orders={orders} />
-        )} */}
+        )}
 
         {/* {["Admin", "HR"].includes(user?.staff_role) && <PerItemQtyDashboard />} */}
         <SearchOrder />

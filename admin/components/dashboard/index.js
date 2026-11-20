@@ -14,6 +14,7 @@ import { db } from "@/app/utils/firebase";
 
 import { useSelector } from "react-redux";
 import { selectUser } from "@/app/redux/slices/authSlice";
+import StaffOrderCounter from "./StaffOrderCounter";
 
 const DashBoard = () => {
   const [counter, setCounter] = useState(null);
@@ -140,6 +141,11 @@ const DashBoard = () => {
             <OrderSourceCounter />
           </div>
         )}
+        {/* {user?.staff_role === "HR" && (
+          <div className="mt-4 w-full">
+            <StaffOrderCounter />
+          </div>
+        )} */}
 
         {/* NEW LAST 7 DAYS CHART */}
 

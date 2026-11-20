@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { db } from "@/app/utils/firebase";
+import { FiShoppingBag, FiTrendingUp, FiUsers } from "react-icons/fi";
 
 const SOURCES = [
   { key: "web", label: "Web", color: "#2563eb" },
@@ -91,13 +92,14 @@ export default function OrderSourceCounter() {
     return Object.entries(staff)
       .map(([key, value]) => ({
         key,
-        name: value?.name || "Unknown Staff",
-        orders: Number(value?.orders || 0),
-        kg: Number(value?.kg || 0),
+        name: value.name || "Unknown Staff",
+        orders: Number(value.orders || 0),
+        kg: Number(value.kg || 0),
+        amount: Number(value.amount || 0),
+        sources: value.sources || {},
       }))
       .sort((a, b) => b.orders - a.orders);
   }, [summary]);
-
   const staffTotalOrders = staffRows.reduce(
     (sum, staff) => sum + staff.orders,
     0,
@@ -582,7 +584,7 @@ export default function OrderSourceCounter() {
       {/* STAFF WISE ORDER COUNTER */}
       <div className="mt-6 overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-blue-50 shadow-sm">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-indigo-100 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3  px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
               <svg
@@ -620,36 +622,44 @@ export default function OrderSourceCounter() {
           </span>
         </div>
 
-        {/* Summary */}
-        <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
-          <div className="rounded-xl border border-indigo-100 bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Total Staff
-            </p>
+        {/* SUMMARY */}
 
-            <h4 className="mt-2 text-3xl font-extrabold text-indigo-700">
-              {staffRows.length}
-            </h4>
+        <div className="mb-5 mx-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-purple-100 bg-purple-50/70 p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-gray-500">
+                Total Staff Orders
+              </p>
+              <FiShoppingBag className="text-purple-600" size={19} />
+            </div>
+
+            <h3 className="mt-2 text-3xl font-bold text-purple-700">
+              {formatNumber(totalOrders, 0)}
+            </h3>
           </div>
 
-          <div className="rounded-xl border border-blue-100 bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Staff Orders
-            </p>
+          <div className="rounded-xl border border-green-100 bg-green-50/70 p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-gray-500">
+                Total Staff Weight
+              </p>
+              <FiTrendingUp className="text-green-600" size={19} />
+            </div>
 
-            <h4 className="mt-2 text-3xl font-extrabold text-blue-700">
-              {formatNumber(staffTotalOrders, 0)}
-            </h4>
+            <h3 className="mt-2 text-3xl font-bold text-green-700">
+              {formatNumber(totalKg)} KG
+            </h3>
           </div>
 
-          <div className="rounded-xl border border-green-100 bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Staff Order Weight
-            </p>
+          <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-gray-500">Active Staff</p>
+              <FiUsers className="text-blue-600" size={19} />
+            </div>
 
-            <h4 className="mt-2 text-3xl font-extrabold text-green-700">
-              {formatNumber(staffTotalKg)} KG
-            </h4>
+            <h3 className="mt-2 text-3xl font-bold text-blue-700">
+              {formatNumber(staffRows.length, 0)}
+            </h3>
           </div>
         </div>
 
@@ -666,7 +676,7 @@ export default function OrderSourceCounter() {
           </div>
 
           {staffRows.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 overflow-visible md:grid-cols-2">
               {staffRows.map((staff, index) => {
                 const percentage = staffTotalOrders
                   ? (staff.orders / staffTotalOrders) * 100
@@ -686,8 +696,10 @@ export default function OrderSourceCounter() {
                 return (
                   <div
                     key={staff.key}
-                    className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                    className="group/staff relative min-w-0 rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:z-50 hover:-translate-y-0.5 hover:shadow-md"
                   >
+                    {/* ORIGINAL STAFF CARD DESIGN */}
+
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
                         <div
@@ -708,21 +720,26 @@ export default function OrderSourceCounter() {
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <h4 className="text-xl font-extrabold text-gray-800">
-                          {formatNumber(staff.orders, 0)}
-                        </h4>
+                      {/* HOVER TARGET */}
 
-                        <p className="text-[10px] text-gray-400">Orders</p>
+                      <div className="relative shrink-0">
+                        <div className="cursor-pointer text-right">
+                          <h4 className="text-xl font-extrabold text-gray-800">
+                            {formatNumber(staff.orders, 0)}
+                          </h4>
+
+                          <p className="text-[10px] text-gray-400">Orders</p>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Progress */}
+                    {/* PROGRESS */}
+
                     <div className="mt-4 h-2 overflow-hidden rounded-full bg-gray-100">
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{
-                          width: `${percentage}%`,
+                          width: `${Math.min(100, percentage)}%`,
                           backgroundColor: color,
                         }}
                       />
@@ -736,6 +753,114 @@ export default function OrderSourceCounter() {
                       <span className="text-xs font-bold text-gray-700">
                         {formatNumber(staff.kg)} KG
                       </span>
+                    </div>
+
+                    {/* SOURCE-WISE TOOLTIP */}
+
+                    <div className="pointer-events-none invisible absolute right-0 bottom-full mb-2 z-[9999] w-[310px] max-w-[90vw] rounded-xl border border-indigo-100 bg-white p-3 opacity-0 shadow-2xl transition-all duration-200 group-hover/staff:visible group-hover/staff:opacity-100">
+                      {/* TOOLTIP HEADER */}
+
+                      <div className="mb-3 flex items-center justify-between border-b border-gray-100 pb-3">
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-800">
+                            {staff.name}
+                          </h4>
+
+                          <p className="mt-0.5 text-[10px] text-gray-400">
+                            Source-wise Order Details
+                          </p>
+                        </div>
+
+                        <span className="rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs font-bold text-indigo-600">
+                          {formatNumber(staff.orders, 0)} Orders
+                        </span>
+                      </div>
+
+                      {/* SOURCE DETAILS */}
+
+                      <div className="space-y-2">
+                        {SOURCES.map((source) => {
+                          const data = staff.sources?.[source.key] || {};
+
+                          const orders = Number(data.orders || 0);
+                          const kg = Number(data.kg || 0);
+                          const amount = Number(data.amount || 0);
+
+                          if (!orders && !kg && !amount) return null;
+
+                          return (
+                            <div
+                              key={source.key}
+                              className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 transition hover:bg-indigo-50/50"
+                            >
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span
+                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                  style={{
+                                    backgroundColor: source.color,
+                                  }}
+                                />
+
+                                <span className="truncate text-xs font-semibold text-gray-700">
+                                  {source.label}
+                                </span>
+                              </div>
+
+                              <div className="shrink-0 text-right">
+                                <p className="text-xs font-bold text-gray-800">
+                                  {formatNumber(orders, 0)} Orders
+                                </p>
+
+                                <p className="text-[10px] text-gray-500">
+                                  {formatNumber(kg)} KG
+                                </p>
+
+                                <p className="text-[10px] text-gray-400">
+                                  ৳ {formatNumber(amount)}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* TOOLTIP FOOTER */}
+
+                      <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-medium text-gray-500">
+                            Total Orders
+                          </span>
+
+                          <span className="font-bold text-gray-800">
+                            {formatNumber(staff.orders, 0)}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between text-xs">
+                          <span className="font-medium text-gray-500">
+                            Total Weight
+                          </span>
+
+                          <span className="font-bold text-emerald-600">
+                            {formatNumber(staff.kg)} KG
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between rounded-lg bg-indigo-50 px-3 py-2 text-xs">
+                          <span className="font-semibold text-indigo-700">
+                            Total Sales
+                          </span>
+
+                          <span className="font-bold text-indigo-700">
+                            ৳ {formatNumber(staff.amount)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="mt-2 text-center text-[10px] text-gray-400">
+                        Live Staff Source Performance
+                      </p>
                     </div>
                   </div>
                 );
