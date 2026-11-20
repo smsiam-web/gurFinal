@@ -10,7 +10,7 @@ function Navbar({ setSidebarActive }) {
     <div className={`${styles.container} fixed shadow-sm`}>
       <div className={styles.wrapper}>
         <div className="flex px-4 py-2 justify-between w-full items-center gap-4">
-          {/* <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <div
               className="p-2 text-white w-fit cursor-pointer hover:shadow-md transition-all duration-300 bg-indigo-200 rounded-lg"
               onClick={() => setSidebarActive((old) => !old)}
@@ -20,7 +20,7 @@ function Navbar({ setSidebarActive }) {
             <span className="text-2xl capitalize font-medium text-title hidden md:block">
               AdminDash
             </span>
-          </div> */}
+          </div>
           <Link href={"/"} className="hidden sm:block">
             <Logo />
           </Link>

@@ -114,7 +114,7 @@ const DashBoard = () => {
   // ==========================================
 
   return (
-    <main className="h-full w-full min-w-0 max-w-full overflow-x-hidden overflow-y-auto">
+    <main className="h-full w-full min-w-0 max-w-full overflow-x-hidden ">
       <div className="mx-auto grid w-full min-w-0 max-w-full">
         {/* DASHBOARD TITLE */}
 
