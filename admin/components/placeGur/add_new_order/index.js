@@ -252,6 +252,7 @@ const AddOrder = ({ onClick }) => {
           // Update all order summaries
           try {
             await updateOrderSummary(orderData);
+            await updateCounters(orderData);
           } catch (error) {
             console.error("Order summary update failed:", error);
           }

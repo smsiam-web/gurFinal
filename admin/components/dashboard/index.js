@@ -15,6 +15,7 @@ import { db } from "@/app/utils/firebase";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/app/redux/slices/authSlice";
 import StaffOrderCounter from "./StaffOrderCounter";
+import { rebuildTodayOrderSummary } from "@/lib/rebuildOrderSummary";
 
 const DashBoard = () => {
   const [counter, setCounter] = useState(null);
@@ -24,6 +25,22 @@ const DashBoard = () => {
   const [last7DaysOrderReport, setLast7DaysOrderReport] = useState([]);
 
   const user = useSelector(selectUser);
+
+  // const handleRebuild = async () => {
+  //   try {
+  //     const result = await rebuildTodayOrderSummary();
+
+  //     console.log("Rebuild successful:", result);
+
+  //     alert(
+  //       `Success!\nOrders: ${result.totalOrders}\nWeight: ${result.totalKg} KG`
+  //     );
+
+  //   } catch (error) {
+  //     console.error("Rebuild failed:", error);
+  //     alert(error.message);
+  //   }
+  // };
 
   // ==========================================
   // ORDER AMOUNT COUNTER
@@ -115,6 +132,13 @@ const DashBoard = () => {
 
   return (
     <main className="h-full w-full min-w-0 max-w-full overflow-x-hidden ">
+      {/* <button
+        type="button"
+        onClick={handleRebuild}
+        className="rounded-lg bg-indigo-600 px-5 py-3 text-white font-semibold"
+      >
+        Rebuild Today's Order Summary
+      </button> */}
       <div className="mx-auto grid w-full min-w-0 max-w-full">
         {/* DASHBOARD TITLE */}
 
@@ -143,17 +167,18 @@ const DashBoard = () => {
         )}
         {user?.staff_role === "HR" && (
           <div className="my-5 w-full">
-          <Last7DaysOrderChart />
-        </div>
+            <Last7DaysOrderChart />
+          </div>
         )}
         {user?.staff_role === "HR" && (
           <div className="my-4 grid gap-4">
-          <LineChart
-            amount={last7DaysAmountReport}
-            order={last7DaysOrderReport}
-          />
-        </div>
+            <LineChart
+              amount={last7DaysAmountReport}
+              order={last7DaysOrderReport}
+            />
+          </div>
         )}
+
         {/* {user?.staff_role === "HR" && (
           <div className="mt-4 w-full">
             <StaffOrderCounter />
@@ -162,11 +187,8 @@ const DashBoard = () => {
 
         {/* NEW LAST 7 DAYS CHART */}
 
-        
-
         {/* EXISTING CHARTS */}
 
-        
         {/* RECENT ORDERS */}
 
         <div className="w-full min-w-0 max-w-full py-6 overflow-hidden">
