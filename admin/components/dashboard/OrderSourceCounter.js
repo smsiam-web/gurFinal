@@ -634,7 +634,7 @@ export default function OrderSourceCounter() {
             </div>
 
             <h3 className="mt-2 text-3xl font-bold text-purple-700">
-              {formatNumber(totalOrders, 0)}
+              {formatNumber(allTotalOrders, 0)}
             </h3>
           </div>
 
@@ -647,7 +647,7 @@ export default function OrderSourceCounter() {
             </div>
 
             <h3 className="mt-2 text-3xl font-bold text-green-700">
-              {formatNumber(totalKg)} KG
+              {formatNumber(allTotalKg)} KG
             </h3>
           </div>
 

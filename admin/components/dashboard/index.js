@@ -141,6 +141,19 @@ const DashBoard = () => {
             <OrderSourceCounter />
           </div>
         )}
+        {user?.staff_role === "HR" && (
+          <div className="my-5 w-full">
+          <Last7DaysOrderChart />
+        </div>
+        )}
+        {user?.staff_role === "HR" && (
+          <div className="my-4 grid gap-4">
+          <LineChart
+            amount={last7DaysAmountReport}
+            order={last7DaysOrderReport}
+          />
+        </div>
+        )}
         {/* {user?.staff_role === "HR" && (
           <div className="mt-4 w-full">
             <StaffOrderCounter />
@@ -149,21 +162,11 @@ const DashBoard = () => {
 
         {/* NEW LAST 7 DAYS CHART */}
 
-        <div className="my-5 w-full">
-          <Last7DaysOrderChart />
-        </div>
+        
 
         {/* EXISTING CHARTS */}
 
-        <div className="my-4 grid gap-4">
-          <LineChart
-            amount={last7DaysAmountReport}
-            order={last7DaysOrderReport}
-          />
-
-          {/* <Percentage /> */}
-        </div>
-
+        
         {/* RECENT ORDERS */}
 
         <div className="w-full min-w-0 max-w-full py-6 overflow-hidden">
