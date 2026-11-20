@@ -264,7 +264,7 @@ const SearchGurOrder = ({ onClick }) => {
   useEffect(() => {
     const privileged = ["Admin", "HR", "CEO"].includes(user?.staff_role);
     setLimits(privileged);
-    setLimit(privileged ? 800 : 30);
+    setLimit(privileged ? 30 : 30);
   }, [user]);
 
   // ✅ Firebase real-time listener
@@ -272,7 +272,7 @@ const SearchGurOrder = ({ onClick }) => {
     const unSub = db
       .collection("ordersAam")
       .orderBy("created_at", "desc")
-      .limit(limit)
+      .limit(30)
       .onSnapshot((snap) => {
         const order = snap.docs.map((doc) => ({
           id: doc.id,

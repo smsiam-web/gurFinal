@@ -132,7 +132,7 @@ const SearchGurOrder = ({ onClick }) => {
               o?.items[0].quantity > 1) ||
             (norm(o?.items[0]?.product_id) === norm("1111") &&
               o?.items.length === 1 &&
-              o?.items[0].quantity > 1),
+              o?.items[0].quantity > 1) ||
           norm(o?.items[0]?.product_id) === norm("50004") &&
             o?.items.length === 1 &&
             o?.items[0].quantity > 1,
