@@ -1,112 +1,173 @@
 import React, { useEffect, useState } from "react";
+
 import PriceOverview from "./PriceOverview";
 import OrderOverview from "./OrderOverview";
 import Percentage from "./Percentage";
-// import OrderTable from "../placeOrder/OrderTable";
 import LineChart from "./LineChart";
-// import SalesAmountCounter from "../SalesAmountCounter";
-import { db } from "@/app/utils/firebase";
+
 import OrderSourceCounter from "./OrderSourceCounter";
+import Last7DaysOrderChart from "./Last7DaysOrderChart";
+
 import OrderTable from "../placeGur/OrderTable";
+
+import { db } from "@/app/utils/firebase";
+
 import { useSelector } from "react-redux";
 import { selectUser } from "@/app/redux/slices/authSlice";
 
 const DashBoard = () => {
-  const [counter, setCounter] = useState();
-  const [last7DaysAmountReport, setLast7DaysAmountReport] = useState();
-  const [last7DaysOrderReport, setLast7DaysOrderReport] = useState();
+  const [counter, setCounter] = useState(null);
 
-  // Get counter from firebase database
+  const [last7DaysAmountReport, setLast7DaysAmountReport] = useState([]);
+
+  const [last7DaysOrderReport, setLast7DaysOrderReport] = useState([]);
+
+  const user = useSelector(selectUser);
+
+  // ==========================================
+  // ORDER AMOUNT COUNTER
+  // ==========================================
+
   useEffect(() => {
-    const unSub = db
+    const unsubscribe = db
       .collection("counters")
       .doc("orderAmmountSummery")
-      .onSnapshot((snap) => {
-        setCounter(snap.data());
-      });
-    return () => {
-      unSub();
-    };
+      .onSnapshot(
+        (snapshot) => {
+          setCounter(snapshot.exists ? snapshot.data() : null);
+        },
+        (error) => {
+          console.error("Counter Error:", error);
+        },
+      );
+
+    return () => unsubscribe();
   }, []);
 
-  // Get last7DaysAmountReport from firebase database
+  // ==========================================
+  // LAST 7 DAYS SALES AMOUNT REPORT
+  // ==========================================
+
   useEffect(() => {
-    const unSub = db
+    const unsubscribe = db
       .collection("counters")
       .doc("last7DaysAmountReport")
-      .onSnapshot((snap) => {
-        const data = (snap.data());
-        const dataArr = [
-          data?.sevenAmount || 0,
-          data?.sixAmount || 0,
-          data?.fiveAmount || 0,
-          data?.fourAmount || 0,
-          data?.threeAmount || 0,
-          data?.twoAmount || 0,
-          data?.oneAmount || 0,
-        ];
-        setLast7DaysAmountReport(dataArr)
-      });
-    return () => {
-      unSub();
-    };
+      .onSnapshot(
+        (snapshot) => {
+          const data = snapshot.exists ? snapshot.data() : {};
+
+          const dataArr = [
+            data?.sevenAmount || 0,
+            data?.sixAmount || 0,
+            data?.fiveAmount || 0,
+            data?.fourAmount || 0,
+            data?.threeAmount || 0,
+            data?.twoAmount || 0,
+            data?.oneAmount || 0,
+          ];
+
+          setLast7DaysAmountReport(dataArr);
+        },
+        (error) => {
+          console.error("Amount Report Error:", error);
+        },
+      );
+
+    return () => unsubscribe();
   }, []);
 
-  // Get last7DaysOrderReport from firebase database
+  // ==========================================
+  // LAST 7 DAYS ORDER REPORT
+  // ==========================================
+
   useEffect(() => {
-    const unSub = db
+    const unsubscribe = db
       .collection("counters")
       .doc("last7DaysOrderReport")
-      .onSnapshot((snap) => {
-        const data = (snap.data());
-        const dataArr = [
-          data?.sevenOrder || 0,
-          data?.sixOrder || 0,
-          data?.fiveOrder || 0,
-          data?.fourOrder || 0,
-          data?.threeOrder || 0,
-          data?.twoOrder || 0,
-          data?.oneOrder || 0,
-        ];
-        setLast7DaysOrderReport(dataArr)
-      });
-    return () => {
-      unSub();
-    };
+      .onSnapshot(
+        (snapshot) => {
+          const data = snapshot.exists ? snapshot.data() : {};
+
+          const dataArr = [
+            data?.sevenOrder || 0,
+            data?.sixOrder || 0,
+            data?.fiveOrder || 0,
+            data?.fourOrder || 0,
+            data?.threeOrder || 0,
+            data?.twoOrder || 0,
+            data?.oneOrder || 0,
+          ];
+
+          setLast7DaysOrderReport(dataArr);
+        },
+        (error) => {
+          console.error("Order Report Error:", error);
+        },
+      );
+
+    return () => unsubscribe();
   }, []);
 
-    const user = useSelector(selectUser);
+  // ==========================================
+  // DASHBOARD UI
+  // ==========================================
 
   return (
-    <main className="h-full overflow-y-auto">
-      <div className=" grid mx-auto">
-        <h1 className="mb-3 text-lg font-bold text-gray-700 ">
+    <main className="h-full w-full min-w-0 max-w-full overflow-x-hidden overflow-y-auto">
+      <div className="mx-auto grid w-full min-w-0 max-w-full">
+        {/* DASHBOARD TITLE */}
+
+        <h1 className="mb-3 text-lg font-bold text-gray-700">
           Dashboard Overview
         </h1>
 
+        {/* PRICE OVERVIEW */}
+
         <div className="w-full">
-          <PriceOverview counter={counter && counter} />
+          <PriceOverview counter={counter} />
         </div>
+
+        {/* ORDER OVERVIEW */}
+
         <div className="w-full">
           <OrderOverview />
         </div>
-         <div className="w-full mt-4">
-        {["HR"].includes(user?.staff_role) && <OrderSourceCounter />}
-          
+
+        {/* ORDER SOURCE COUNTER */}
+
+        {user?.staff_role === "HR" && (
+          <div className="mt-4 w-full">
+            <OrderSourceCounter />
+          </div>
+        )}
+
+        {/* NEW LAST 7 DAYS CHART */}
+
+        <div className="my-5 w-full">
+          <Last7DaysOrderChart />
         </div>
-        <div className="grid gap-4 xl:grid-cols-2 my-4">
+
+        {/* EXISTING CHARTS */}
+
+        <div className="my-4 grid gap-4">
           <LineChart
             amount={last7DaysAmountReport}
             order={last7DaysOrderReport}
           />
-          <Percentage />
+
+          {/* <Percentage /> */}
         </div>
-        
-        <div className="py-6 w-full ">
+
+        {/* RECENT ORDERS */}
+
+        <div className="w-full min-w-0 max-w-full py-6 overflow-hidden">
           <h2 className="text-title pb-3 font-medium text-lg md:text-xl">
             Recent Order
           </h2>
-          <OrderTable />
+
+          <div className="w-full min-w-0 max-w-full overflow-hidden">
+            <OrderTable />
+          </div>
         </div>
       </div>
     </main>

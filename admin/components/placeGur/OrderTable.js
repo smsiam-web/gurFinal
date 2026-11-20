@@ -1,175 +1,390 @@
-import { Tooltip } from "@mantine/core";
-import React, { useEffect, useState, useRef } from "react";
-import { HiOutlineDocumentDownload } from "react-icons/hi";
-import { Modal } from "@mantine/core";
-import { FiEdit } from "react-icons/fi";
-import { Pagination } from "@mantine/core";
+
+import React, { useEffect, useState } from "react";
+import { Tooltip, Modal, Pagination } from "@mantine/core";
 import Link from "next/link";
+
 import { db } from "@/app/utils/firebase";
 import { notifications } from "@mantine/notifications";
+
 import { useDispatch, useSelector } from "react-redux";
 import { selectOrder, updateOrder } from "@/app/redux/slices/orderSlice";
-import FormHeader from "../shared/FormHeader";
-import Button from "../shared/Button";
-import NotFound from "../shared/NotFound";
-import { AiOutlinePrinter } from "react-icons/ai";
 import { selectUser } from "@/app/redux/slices/authSlice";
+import { updateConfig } from "@/app/redux/slices/configSlice";
+
+import NotFound from "../shared/NotFound";
+
 import {
   formatDates,
-  generateStick,
   invoiceGenerate,
-  updateOrderStatus,
   updateOrderStatusGur,
 } from "@/admin/utils/helpers";
+
+import { HiOutlineDocumentDownload } from "react-icons/hi";
+import {
+  FiEdit,
+  FiPhone,
+  FiUser,
+  FiMapPin,
+  FiCalendar,
+  FiSearch,
+} from "react-icons/fi";
+
+import { AiOutlinePrinter } from "react-icons/ai";
 import { FaPrint } from "react-icons/fa";
-import { updateConfig } from "@/app/redux/slices/configSlice";
-import { useBarcode } from "next-barcode";
 import { RiDeleteBinLine } from "react-icons/ri";
-import "firebase/database";
 import { IoIosSend } from "react-icons/io";
+
+import {
+  MdOutlineLocalShipping,
+  MdOutlineShoppingBag,
+} from "react-icons/md";
+
+import {
+  TbRefresh,
+  TbTruckDelivery,
+} from "react-icons/tb";
+
+import { BsThreeDots } from "react-icons/bs";
+
 import generateBulkPrintStickers from "../orderGur/generateBulkSticker";
 
+// --------------------------------------------------
+// STATUS CONFIG
+// --------------------------------------------------
+
+const STATUS_CONFIG = {
+  pending: {
+    label: "Pending",
+    color: "bg-amber-50 text-amber-700 border-amber-200",
+    dot: "bg-amber-500",
+  },
+  hold: {
+    label: "Hold",
+    color: "bg-gray-100 text-gray-700 border-gray-200",
+    dot: "bg-gray-500",
+  },
+  processing: {
+    label: "Processing",
+    color: "bg-blue-50 text-blue-700 border-blue-200",
+    dot: "bg-blue-500",
+  },
+  shipped: {
+    label: "Shipped",
+    color: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    dot: "bg-indigo-500",
+  },
+  delivered: {
+    label: "Delivered",
+    color: "bg-green-50 text-green-700 border-green-200",
+    dot: "bg-green-500",
+  },
+  returned: {
+    label: "Returned",
+    color: "bg-teal-50 text-teal-700 border-teal-200",
+    dot: "bg-teal-500",
+  },
+  cancelled: {
+    label: "Cancelled",
+    color: "bg-red-50 text-red-700 border-red-200",
+    dot: "bg-red-500",
+  },
+};
+
+const getStatus = (status) => {
+  const key = String(status || "pending").toLowerCase();
+
+  return STATUS_CONFIG[key] || {
+    label: status || "Unknown",
+    color: "bg-gray-100 text-gray-600 border-gray-200",
+    dot: "bg-gray-400",
+  };
+};
+
+const formatMoney = (value) =>
+  Number(value || 0).toLocaleString("en-BD", {
+    maximumFractionDigits: 2,
+  });
+
+// --------------------------------------------------
+// STATUS BADGE
+// --------------------------------------------------
+
+const StatusBadge = ({ status }) => {
+  const config = getStatus(status);
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold ${config.color}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${config.dot}`} />
+      {config.label}
+    </span>
+  );
+};
+
+// --------------------------------------------------
+// ACTION BUTTON
+// --------------------------------------------------
+
+const ActionButton = ({
+  title,
+  onClick,
+  children,
+  color = "gray",
+}) => {
+  const colors = {
+    blue: "bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white",
+    green: "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white",
+    red: "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white",
+    gray: "bg-gray-50 text-gray-600 hover:bg-gray-200",
+    orange: "bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white",
+  };
+
+  return (
+    <Tooltip label={title} withArrow>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={title}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${colors[color]}`}
+      >
+        {children}
+      </button>
+    </Tooltip>
+  );
+};
+
+// --------------------------------------------------
+// MAIN COMPONENT
+// --------------------------------------------------
+
 const OrderTable = () => {
-  const [loading, setLoading] = useState(false);
-  const [filterOrder, setFilterOrder] = useState(null);
   const dispatch = useDispatch();
-  const [orders, setOrders] = useState(useSelector(selectOrder));
-  const [page, setPagee] = useState(1);
-  const [opened, setOpened] = useState(false);
+
   const order = useSelector(selectOrder);
   const user = useSelector(selectUser);
-  const [ID, setID] = useState(null);
 
-  const toggleOpen = () => {
-    opened ? setOpened(false) : setOpened(true);
-  };
+  const [orders, setOrders] = useState([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
 
-  const ref = useRef();
+  const [filterOrder, setFilterOrder] = useState(null);
+  const [opened, setOpened] = useState(false);
+
+  const role = user?.staff_role || "";
+
+  const isHR = role === "HR";
+  const isAdmin = role === "Admin";
+  const isSalesManager = role === "Sales Manager";
+
+  const canChangeStatus = isHR || isAdmin || isSalesManager;
+  const canManageOrders = isHR || isAdmin;
+
+  // --------------------------------------------------
+  // REDUX SYNC
+  // --------------------------------------------------
 
   useEffect(() => {
-    setOrders(order);
+    setOrders(Array.isArray(order) ? order : []);
   }, [order]);
 
-  const setPage = (i) => {
-    setPagee(i);
+  // --------------------------------------------------
+  // MODAL
+  // --------------------------------------------------
+
+  const closeModal = () => {
+    setOpened(false);
+    setFilterOrder(null);
   };
 
-  // Change Status from status Action
-  const onStatusChanged = async (e, id) => {
-    e.preventDefault();
-    const status = e.target.value;
-    orders.map((i) => {
-      i.id === id && updateStatus(i, status);
-    });
-  };
-  // Change Status from print Action and check print Status
-  const statusUpdate = async (item) => {
-    item.status === "pending" && invoiceGenerate(item);
+  // --------------------------------------------------
+  // UPDATE STATUS
+  // --------------------------------------------------
 
-    item.status === "pending" ? updateStatus(item, "processing") : toggleOpen;
-    setFilterOrder(item);
-    //   console.log(item);
-  };
+  const updateStatus = async (item, newStatus) => {
+    try {
+      const success = await updateOrderStatusGur(
+        db,
+        item.id,
+        item,
+        newStatus
+      );
 
-  // Change Status from print Action and check print Status
-  const stickerStatus = async (item) => {
-    await setID(item?.courier?.consignment_id);
-    item.status === "processing"
-      ? updateStatus(item, "shipped", item?.id)
-      : toggleOpen;
-    setFilterOrder(item);
-    item.status === "processing" && generateBulkPrintStickers([item]);
-    setID(null);
-  };
+      if (success) {
+        notifications.show({
+          title: "Status Updated Successfully",
+          message: `Order #${item.id} status changed to ${newStatus}.`,
+          color: "blue",
+        });
 
-  const deleteItem = async (item) => {
-    setFilterOrder(item);
-    toggleOpen();
-  };
+        setOpened(false);
+      } else {
+        notifications.show({
+          title: "Status Update Failed",
+          message: "An error occurred while updating the status.",
+          color: "red",
+        });
+      }
+    } catch (error) {
+      console.error(error);
 
-  // update status on firebase
-  const updateStatus = async (order, newStatus) => {
-    const success = await updateOrderStatusGur(db, order.id, order, newStatus);
-    if (success) {
-      notifications.show({
-        title: "Status Updated Successfully",
-        message: `Order #${order.id} status changed to ${newStatus}.`,
-        color: "blue",
-      });
-      close();
-    } else {
       notifications.show({
         title: "Status Update Failed",
-        message: "An error occurred while updating the status.",
+        message: error.message || "Please try again.",
         color: "red",
       });
     }
   };
 
-  // Get order from firebase database
+  const onStatusChanged = async (e, id) => {
+    e.preventDefault();
+
+    const newStatus = e.target.value;
+    const selectedOrder = orders.find((item) => item.id === id);
+
+    if (selectedOrder) {
+      await updateStatus(selectedOrder, newStatus);
+    }
+  };
+
+  // --------------------------------------------------
+  // INVOICE
+  // --------------------------------------------------
+
+  const statusUpdate = async (item) => {
+    if (item.status === "pending") {
+      invoiceGenerate(item);
+      await updateStatus(item, "processing");
+    }
+
+    setFilterOrder(item);
+  };
+
+  // --------------------------------------------------
+  // STICKER
+  // --------------------------------------------------
+
+  const stickerStatus = async (item) => {
+    try {
+      if (item.status === "processing") {
+        await updateStatus(item, "shipped");
+        await generateBulkPrintStickers([item]);
+      } else {
+        await generateBulkPrintStickers([item]);
+      }
+
+      setFilterOrder(item);
+    } catch (error) {
+      console.error(error);
+
+      notifications.show({
+        title: "Sticker Generation Failed",
+        message: error.message || "Please try again.",
+        color: "red",
+      });
+    }
+  };
+
+  // --------------------------------------------------
+  // DELETE
+  // --------------------------------------------------
+
+  const deleteItem = (item) => {
+    setFilterOrder(item);
+    setOpened(true);
+  };
+
+  const DeleteOrder = async (item) => {
+    if (!item?.id) return;
+
+    setOpened(false);
+
+    try {
+      await db
+        .collection("ordersGur")
+        .doc(item.id)
+        .delete();
+
+      notifications.show({
+        title: "Delete Successfully",
+        message: `Order ID: #${item.id} has been deleted.`,
+        color: "orange",
+      });
+
+      setFilterOrder(null);
+    } catch (error) {
+      console.error("Delete order failed:", error);
+
+      notifications.show({
+        title: "Delete Failed",
+        message: error.message || "Unable to delete order.",
+        color: "red",
+      });
+    }
+  };
+
+  // --------------------------------------------------
+  // FIREBASE ORDER LISTENER
+  // --------------------------------------------------
+
   useEffect(() => {
     setLoading(true);
+
     const unSub = db
       .collection("ordersGur")
       .orderBy("created_at", "desc")
       .limit(30)
-      .onSnapshot((snap) => {
-        const order = [];
-        snap.docs.map((doc) => {
-          order.push({
+      .onSnapshot(
+        (snap) => {
+          const orderData = snap.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
+          }));
+
+          dispatch(updateOrder(orderData));
+          setLoading(false);
+        },
+        (error) => {
+          console.error("Order loading error:", error);
+          setLoading(false);
+
+          notifications.show({
+            title: "Loading Failed",
+            message: error.message,
+            color: "red",
           });
-        });
-        console.log(order);
-        dispatch(updateOrder(order));
-        setLoading(false);
-      });
-    return () => {
-      unSub();
-    };
-  }, []);
+        }
+      );
 
-  //get config
+    return () => unSub();
+  }, [dispatch]);
+
+  // --------------------------------------------------
+  // CONFIG LISTENER
+  // --------------------------------------------------
+
   useEffect(() => {
-    const unSub = db.collection("config").onSnapshot((snap) => {
-      const configData = [];
-      snap.docs.map((doc) => {
-        configData.push(doc.data());
-      });
-      dispatch(updateConfig(configData));
-    });
-    return () => {
-      unSub();
-    };
-  }, []);
+    const unSub = db.collection("config").onSnapshot(
+      (snap) => {
+        const configData = snap.docs.map((doc) => doc.data());
+        dispatch(updateConfig(configData));
+      },
+      (error) => {
+        console.error("Config loading error:", error);
+      }
+    );
 
-  //after confirmaiton Delete porduct from firebase
-  const DeleteOrder = async (item) => {
-    toggleOpen();
-    await db
-      .collection("ordersGur")
-      .doc(item.id)
-      .delete()
-      .then(() => {
-        notifications.show({
-          title: "Delete successfully",
-          message: `Customer Name ${item.order_details.customer_name}, Order ID: #${item.id}`,
-          color: "orange",
-        });
-      })
-      .catch((error) => {
-        console.error("Error removing document: (from orderTable)", error);
-      });
+    return () => unSub();
+  }, [dispatch]);
 
-    setFilterOrder(null);
-  };
+  // --------------------------------------------------
+  // PATHAO COURIER RESEND
+  // --------------------------------------------------
 
-  //after confirmaiton Delete porduct from firebase
   const retryCourier = async (item) => {
-    const orderID = item.orderID;
+    const orderID = item.orderID || item.id;
+
     try {
-      //Pathao
       const orderPayload = {
         store_id: 344188,
         merchant_order_id: `${orderID}`,
@@ -185,15 +400,23 @@ const OrderTable = () => {
         amount_to_collect: `${item?.totals?.cod || 0}`,
       };
 
-      const resp = await fetch("/api/pathaoAamWala/place-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderPayload),
-      });
+      const resp = await fetch(
+        "/api/pathaoAamWala/place-order",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(orderPayload),
+        }
+      );
+
       const result = await resp.json();
 
       if (!resp.ok || result?.type === "error") {
-        throw new Error(result?.message || "Pathao order failed");
+        throw new Error(
+          result?.message || "Pathao order failed"
+        );
       }
 
       const fulfillmentPatch = {
@@ -202,520 +425,797 @@ const OrderTable = () => {
           result?.data?.consignment_id ??
           result?.data?.data?.consignment_id ??
           null,
+
         tracking_code:
           result?.data?.tracking_code ??
           result?.data?.data?.tracking_code ??
           null,
+
         pathao_raw: result?.data,
       };
 
+      const normalized = {
+        ...item,
+        fulfillment: {
+          ...fulfillmentPatch,
+        },
+      };
+
+      await db
+        .collection("ordersGur")
+        .doc(orderID)
+        .update(normalized);
+
       notifications.show({
-        title: "Success (Pathao)",
-        message: `Order sent to Pathao${
+        title: "Pathao Success",
+        message: `Order ${orderID} sent successfully${
           fulfillmentPatch.consignment_id
             ? ` · CN: ${fulfillmentPatch.consignment_id}`
             : ""
         }`,
-        color: "blue",
+        color: "green",
         autoClose: 6000,
       });
-
-      const normalized = {
-        ...item,
-        fulfillment: { ...fulfillmentPatch },
-      };
-
-      await db.collection("ordersGur").doc(orderID).update(normalized);
+    } catch (error) {
+      console.error("Courier create failed:", error);
 
       notifications.show({
-        title: "Updated",
-        message: `Order ${orderID} updated successfully.`,
-        color: "green",
-      });
-
-      //STEADFAST Courier
-      // const sfPayload = {
-      //   cod_amount: `${item?.totals?.cod || 0}`,
-      //   invoice: `${orderID || "N/A"}`,
-      //   note: `${item?.notes || ""}`,
-      //   recipient_name: `${item?.customer?.name || ""}`,
-      //   recipient_phone: `${item?.customer?.phone || ""}`,
-      //   recipient_address: `${item?.shipping_address?.street || ""}`,
-      // };
-
-      // const resp = await fetch("/api/steadfast/create-order", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(sfPayload),
-      // });
-      // const result = await resp.json();
-
-      // if (!resp.ok || result?.type !== "success") {
-      //   throw new Error(result?.message || "Steadfast order failed");
-      // }
-
-      // const cons = result?.data?.consignment || {};
-      // const fulfillmentPatch = {
-      //   courier: "Pathao",
-      //   consignment_id: cons?.consignment_id ?? null,
-      //   tracking_code: cons?.tracking_code ?? null,
-      //   steadfast_raw: result?.data,
-      // };
-
-      // notifications.show({
-      //   title: "Success (Steadfast)",
-      //   message: `Order sent to Steadfast${
-      //     fulfillmentPatch.consignment_id
-      //       ? ` · CN: ${fulfillmentPatch.consignment_id}`
-      //       : ""
-      //   }`,
-      //   color: "blue",
-      //   autoClose: 6000,
-      // });
-
-      // const normalized = {
-      //   ...item,
-      //   fulfillment: { ...fulfillmentPatch },
-      // };
-
-      // await db.collection("ordersGur").doc(orderID).update(normalized);
-
-      // notifications.show({
-      //   title: "Updated",
-      //   message: `Order ${orderID} updated successfully.`,
-      //   color: "green",
-      // });
-    } catch (err) {
-      console.error("Courier create failed:", err);
-      notifications.show({
-        title: "Courier create failed",
-        message: err?.message || "Please try again later.",
+        title: "Courier Create Failed",
+        message: error.message || "Please try again later.",
         color: "orange",
         autoClose: 6000,
       });
     }
   };
 
+  // --------------------------------------------------
+  // PAGINATION
+  // --------------------------------------------------
+
+  const pageSize = 15;
+  const totalPages = Math.ceil(orders.length / pageSize);
+
+  const paginatedOrders = orders.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
+
+  // --------------------------------------------------
+  // COUNTERS
+  // --------------------------------------------------
+
+  const totalOrders = orders.length;
+
+  const pendingOrders = orders.filter(
+    (item) => item.status?.toLowerCase() === "pending"
+  ).length;
+
+  const processingOrders = orders.filter(
+    (item) => item.status?.toLowerCase() === "processing"
+  ).length;
+
+  const shippedOrders = orders.filter(
+    (item) => item.status?.toLowerCase() === "shipped"
+  ).length;
+
+  const deliveredOrders = orders.filter(
+    (item) => item.status?.toLowerCase() === "delivered"
+  ).length;
+
+  // --------------------------------------------------
+  // SUMMARY CONFIG
+  // --------------------------------------------------
+
+  const summaryCards = [
+    {
+      title: "Total Orders",
+      value: totalOrders,
+      icon: MdOutlineShoppingBag,
+      color: "blue",
+    },
+    {
+      title: "Pending",
+      value: pendingOrders,
+      icon: TbRefresh,
+      color: "amber",
+    },
+    {
+      title: "Processing",
+      value: processingOrders,
+      icon: FiEdit,
+      color: "indigo",
+    },
+    {
+      title: "Shipped",
+      value: shippedOrders,
+      icon: MdOutlineLocalShipping,
+      color: "teal",
+    },
+    {
+      title: "Delivered",
+      value: deliveredOrders,
+      icon: TbTruckDelivery,
+      color: "green",
+    },
+  ];
+
+  // --------------------------------------------------
+  // RENDER
+  // --------------------------------------------------
+
   return (
-    <main>
-      {/* confirmaiton pop-up */}
-      <Modal
-        opened={opened}
-        withCloseButton={false}
-        onClose={() => toggleOpen()}
-        centered
-      >
-        <div className="p-2 rounded-lg">
-          <FormHeader
-            onClick={() => toggleOpen()}
-            title={"Order Delete Confirmation"}
-          />
-          {/* confirmaiton pop-up  */}
-          {filterOrder && (
-            <div className="bg-gray-50 py-10">
-              <div className="flex flex-col items-center gap-3">
-                <div className="text-center">
-                  <h1 className="text-3xl font-semibold text-title">
-                    <span className="text-lg font-bold">#</span>
-                    {filterOrder?.id} ({filterOrder?.status})
-                  </h1>
-                  <h1 className="text-2xl font-semibold text-title">
-                    {filterOrder?.customer_details?.customer_name}
-                  </h1>
-                  <h1 className="text-xl text-title">
-                    {filterOrder?.customer_details?.phone_number}
-                  </h1>
-                  <h1 className="text-lg text-title pb-2">
-                    {filterOrder?.customer_details?.customer_address}
-                  </h1>
-                  <h1 className="text-4xl font-semibold text-title">
-                    COD: {filterOrder?.customer_details?.salePrice}/-
-                  </h1>
+    <main className="w-full min-w-0 max-w-full space-y-6 overflow-x-hidden">
+
+      {/* PAGE HEADER */}
+
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
+
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-100">
+            <MdOutlineShoppingBag size={25} />
+          </div>
+
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-gray-800">
+              Order Management
+            </h2>
+
+            <p className="mt-1 text-xs text-gray-400">
+              Manage, track and monitor your orders
+            </p>
+          </div>
+        </div>
+
+        <span className="inline-flex items-center gap-2 rounded-full border border-green-100 bg-green-50 px-3 py-2 text-xs font-semibold text-green-700">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+          Live Order Updates
+        </span>
+
+      </div>
+
+      {/* SUMMARY CARDS */}
+
+      <div className="grid w-full min-w-0 grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+
+        {summaryCards.map((card) => {
+          const colors = {
+            blue: {
+              icon: "bg-blue-50 text-blue-600",
+              border: "hover:border-blue-200",
+              value: "text-blue-700",
+            },
+            amber: {
+              icon: "bg-amber-50 text-amber-600",
+              border: "hover:border-amber-200",
+              value: "text-amber-700",
+            },
+            indigo: {
+              icon: "bg-indigo-50 text-indigo-600",
+              border: "hover:border-indigo-200",
+              value: "text-indigo-700",
+            },
+            teal: {
+              icon: "bg-teal-50 text-teal-600",
+              border: "hover:border-teal-200",
+              value: "text-teal-700",
+            },
+            green: {
+              icon: "bg-green-50 text-green-600",
+              border: "hover:border-green-200",
+              value: "text-green-700",
+            },
+          };
+
+          const theme = colors[card.color];
+
+          return (
+            <div
+              key={card.title}
+              className={`group min-w-0 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${theme.border}`}
+            >
+              <div className="flex items-center justify-between gap-2">
+
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-semibold text-gray-500">
+                    {card.title}
+                  </p>
+
+                  <h3 className={`mt-2 text-2xl font-bold ${theme.value}`}>
+                    {String(card.value).padStart(2, "0")}
+                  </h3>
                 </div>
-                <div className="grid grid-cols-2 gap-6 mt-4">
-                  <Button
-                    onClick={() => toggleOpen()}
-                    title="Cancel"
-                    className="text-md bg-red-400 hover:bg-red-500 text-white px-8"
-                  />
-                  <Button
-                    onClick={() => DeleteOrder(filterOrder)}
-                    title="Yes, I'm Sure"
-                    className="text-md bg-green-500 hover:bg-green-600 text-white px-8"
-                  />
+
+                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 ${theme.icon}`}>
+                  <card.icon size={21} />
                 </div>
+
               </div>
             </div>
-          )}
-        </div>
-      </Modal>
-      <div className="grid gap-4 w-full overflow-hidden ">
-        <div className="w-full overflow-x-scroll rounded-md relative">
-          {/* order table  */}
-          {!orders.length ? (
-            <NotFound text={"order"} />
-          ) : (
-            <table className="w-full whitespace-nowrap table-auto">
-              <thead className="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b border-gray-200  bg-gray-100">
-                <tr>
-                  <th className="px-4 py-3 ">invoice no</th>
-                  <th className="px-4 py-3 ">Courier</th>
-                  <th className="px-4 py-3 ">consignment</th>
-                  <th className="px-4 py-3 ">NAME</th>
-                  <th className="px-4 py-3 ">Phone no.</th>
-                  <th className="px-4 py-3 ">DISCOUNT</th>
-                  <th className="px-4 py-3 ">Paid</th>
-                  <th className="px-4 py-3 ">COD</th>
-                  <th className="px-4 py-3 text-center ">status</th>
-                  <th
-                    className={`px-4 py-3 ${
-                      user.staff_role === "HR" ||
-                      user.staff_role === "Admin" ||
-                      user?.staff_role === "Sales Manager"
-                        ? ""
-                        : "hidden"
-                    }`}
-                  >
-                    Actions
-                  </th>
-                  <th className="px-4 py-3 text-center ">type</th>
-                  <th className="px-4 py-3 ">CAtegory</th>
-                  <th className="px-4 py-3 ">Created at</th>
-                  <th className="px-4 py-3 ">Created By</th>
-                  <th className="px-4 py-3 ">invoice</th>
+          );
+        })}
 
-                  <th className="px-4 py-3 text-center">ACTIONS</th>
+      </div>
+
+      {/* TABLE CARD */}
+
+      <section className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+
+        {/* TABLE HEADER */}
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-gradient-to-r from-white via-blue-50/50 to-indigo-50/50 px-4 py-4 sm:px-5">
+
+          <div className="flex items-center gap-3">
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+              <MdOutlineShoppingBag size={21} />
+            </div>
+
+            <div>
+              <h3 className="text-base font-bold text-gray-800">
+                Recent Orders
+              </h3>
+
+              <p className="mt-1 text-xs text-gray-400">
+                Latest 30 orders from your store
+              </p>
+            </div>
+
+          </div>
+
+          <div className="flex items-center gap-2 rounded-xl border border-blue-100 bg-white px-3 py-2">
+            <FiUser className="text-blue-500" size={15} />
+
+            <span className="text-xs font-semibold text-gray-600">
+              {totalOrders} Orders
+            </span>
+          </div>
+
+        </div>
+
+        {/* TABLE BODY */}
+
+        {loading ? (
+
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600" />
+
+            <p className="mt-4 text-sm font-medium text-gray-500">
+              Loading orders...
+            </p>
+          </div>
+
+        ) : !orders.length ? (
+
+          <div className="p-8">
+            <NotFound text="order" />
+          </div>
+
+        ) : (
+
+          /* IMPORTANT: SCROLL CONTAINER */
+
+          <div
+            className="block w-full min-w-0 max-w-full overflow-x-auto overflow-y-hidden overscroll-x-contain"
+            style={{
+              WebkitOverflowScrolling: "touch",
+              scrollbarWidth: "thin",
+            }}
+          >
+
+            <table className="w-full min-w-[1550px] border-collapse text-left">
+
+              {/* TABLE HEAD */}
+
+              <thead className="sticky top-0 z-10 bg-gray-50">
+
+                <tr className="border-b border-gray-100 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+
+                  <th className="whitespace-nowrap px-4 py-4">Order ID</th>
+                  <th className="whitespace-nowrap px-4 py-4">Courier</th>
+                  <th className="whitespace-nowrap px-4 py-4">Consignment</th>
+                  <th className="whitespace-nowrap px-4 py-4">Customer</th>
+                  <th className="whitespace-nowrap px-4 py-4">Phone</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-right">Discount</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-right">Paid</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-right">COD</th>
+                  <th className="whitespace-nowrap px-4 py-4">Status</th>
+
+                  {canChangeStatus && (
+                    <th className="whitespace-nowrap px-4 py-4">Update Status</th>
+                  )}
+
+                  <th className="whitespace-nowrap px-4 py-4">Source</th>
+                  <th className="whitespace-nowrap px-4 py-4">Category</th>
+                  <th className="whitespace-nowrap px-4 py-4">Created At</th>
+                  <th className="whitespace-nowrap px-4 py-4">Created By</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-center">Invoice</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-center">Actions</th>
+
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-100 ">
-                <>
-                  {!!orders &&
-                    orders?.map(
-                      (item, index) =>
-                        index >= 15 * page - 15 &&
-                        index + 1 <= 15 * page && (
-                          <tr
-                            className={`hover:bg-blue-200 ${
-                              item?.isFilter && "bg-sky-200"
-                            } ${
-                              item?.status?.toLowerCase() === "delivered" &&
-                              "bg-green-100"
-                            } ${
-                              item.customer_details?.markAs === "Argent" &&
-                              "bg-green-100"
-                            }`}
-                            key={index}
+
+              {/* TABLE ROWS */}
+
+              <tbody className="divide-y divide-gray-100">
+
+                {paginatedOrders.map((item) => {
+
+                  const isDelivered =
+                    item.status?.toLowerCase() === "delivered";
+
+                  const isUrgent =
+                    item.customer_details?.markAs === "Argent";
+
+                  return (
+
+                    <tr
+                      key={item.id}
+                      className={`transition-colors duration-200 hover:bg-blue-50/70 ${
+                        item.isFilter
+                          ? "bg-sky-50"
+                          : isDelivered || isUrgent
+                          ? "bg-green-50/40"
+                          : "bg-white"
+                      }`}
+                    >
+
+                      {/* ORDER ID */}
+
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <Link href={`/place-gur/id=${item.id}`}>
+                          <span className="inline-flex cursor-pointer items-center rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:border-blue-600 hover:bg-blue-600 hover:text-white">
+                            #{item.id}
+                          </span>
+                        </Link>
+                      </td>
+
+                      {/* COURIER */}
+
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <span className="inline-flex items-center gap-2 text-xs font-semibold text-gray-700">
+                          <MdOutlineLocalShipping className="text-blue-500" size={17} />
+                          {item?.fulfillment?.courier || "Not Assigned"}
+                        </span>
+                      </td>
+
+                      {/* CONSIGNMENT */}
+
+                      <td className="whitespace-nowrap px-4 py-4">
+
+                        {(item?.fulfillment?.courier === "Pathao" &&
+                          item?.fulfillment?.consignment_id) ||
+                        item?.fulfillment?.courier !== "Pathao" ? (
+
+                          <Link
+                            href={
+                              item?.fulfillment?.courier === "Pathao"
+                                ? `https://merchant.pathao.com/courier/orders/${item?.fulfillment?.consignment_id}`
+                                : `https://steadfast.com.bd/user/consignment/${item?.fulfillment?.consignment_id}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
                           >
-                            <td className="px-4 py-3 font-bold">
-                              <Link href={`/place-gur/id=${item.id}`}>
-                                <span className="text-sm">#{item.id}</span>
-                              </Link>
-                            </td>
-                            <td className="px-4 py-3 font-bold">
-                              {/* <Link href={`/place-order/id=${item.id}`}> */}
-                              <span className="text-sm">
-                                {item?.fulfillment?.courier || "null"}
-                              </span>
-                              {/* </Link> */}
-                            </td>
-                            <td className="px-4 py-3 font-bold">
-                              {(item?.fulfillment?.courier === "Pathao" && item?.fulfillment?.consignment_id) || item?.fulfillment?.courier !== "Pathao"
-                              ? (
-                                <Link
-                                  href={`${
-                                    item?.fulfillment?.courier === "Pathao"
-                                      ? `https://merchant.pathao.com/courier/orders/${item?.fulfillment?.consignment_id}`
-                                      : `https://steadfast.com.bd/user/consignment/${item?.fulfillment?.consignment_id}`
-                                  }`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                            <span className="cursor-pointer text-xs font-semibold text-blue-600 hover:underline">
+                              {item?.fulfillment?.consignment_id || "—"}
+                            </span>
+                          </Link>
+
+                        ) : (
+
+                          <button
+                            type="button"
+                            onClick={() => retryCourier(item)}
+                            className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-600 hover:text-white"
+                          >
+                            <IoIosSend size={15} />
+                            Resend
+                          </button>
+
+                        )}
+
+                      </td>
+
+                      {/* CUSTOMER */}
+
+                      <td className="px-4 py-4">
+
+                        <div className="flex items-center gap-2.5">
+
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                            <FiUser size={16} />
+                          </div>
+
+                          <div className="min-w-0">
+
+                            <p className="max-w-[170px] truncate text-xs font-bold text-gray-800">
+                              {item.customer?.name || "Unknown Customer"}
+                            </p>
+
+                            {item?.shipping_address?.city && (
+                              <p className="mt-1 flex items-center gap-1 text-[10px] text-gray-400">
+                                <FiMapPin size={10} />
+                                {item.shipping_address.city}
+                              </p>
+                            )}
+
+                          </div>
+
+                        </div>
+
+                      </td>
+
+                      {/* PHONE */}
+
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <a
+                          href={`tel:${item.customer?.phone || ""}`}
+                          className="inline-flex items-center gap-2 text-xs font-semibold text-gray-600 transition hover:text-blue-600"
+                        >
+                          <FiPhone size={13} className="text-blue-500" />
+                          {item.customer?.phone || "—"}
+                        </a>
+                      </td>
+
+                      {/* DISCOUNT */}
+
+                      <td className="whitespace-nowrap px-4 py-4 text-right">
+                        <span className="text-xs font-semibold text-red-500">
+                          -৳{formatMoney(item?.totals?.discount)}
+                        </span>
+                      </td>
+
+                      {/* PAID */}
+
+                      <td className="whitespace-nowrap px-4 py-4 text-right">
+                        <span className="text-xs font-semibold text-green-600">
+                          ৳{formatMoney(item?.totals?.payment)}
+                        </span>
+                      </td>
+
+                      {/* COD */}
+
+                      <td className="whitespace-nowrap px-4 py-4 text-right">
+                        <span className="text-sm font-bold text-gray-800">
+                          ৳{formatMoney(item?.totals?.cod)}
+                        </span>
+                      </td>
+
+                      {/* STATUS */}
+
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <StatusBadge status={item.status} />
+                      </td>
+
+                      {/* STATUS UPDATE */}
+
+                      {canChangeStatus && (
+
+                        <td className="whitespace-nowrap px-4 py-4">
+
+                          <select
+                            value={item.status || "pending"}
+                            onChange={(e) => onStatusChanged(e, item.id)}
+                            className="h-9 w-32 cursor-pointer rounded-xl border border-gray-200 bg-white px-2 text-xs font-medium text-gray-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                          >
+
+                            <option value="pending">Pending</option>
+
+                            {role !== "Sales Manager" && (
+                              <option value="processing">Processing</option>
+                            )}
+
+                            {role !== "Sales Manager" && (
+                              <option value="shipped">Shipped</option>
+                            )}
+
+                            {role !== "Sales Manager" && (
+                              <option value="delivered">Delivered</option>
+                            )}
+
+                            <option value="Hold">Hold</option>
+
+                            {role !== "Sales Manager" && (
+                              <option value="returned">Returned</option>
+                            )}
+
+                            <option value="cancelled">Cancelled</option>
+
+                          </select>
+
+                        </td>
+
+                      )}
+
+                      {/* SOURCE */}
+
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <span className="inline-flex rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold capitalize text-indigo-600">
+                          {item.meta?.source || "Other"}
+                        </span>
+                      </td>
+
+                      {/* CATEGORY */}
+
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <span className="inline-flex rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold uppercase text-gray-600">
+                          {item?.categories || "—"}
+                        </span>
+                      </td>
+
+                      {/* CREATED AT */}
+
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <span className="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                          <FiCalendar className="text-gray-400" size={13} />
+                          {item?.created_at
+                            ? formatDates(item.created_at)
+                            : "—"}
+                        </span>
+                      </td>
+
+                      {/* CREATED BY */}
+
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <span className="inline-flex items-center gap-2 text-xs font-semibold text-gray-600">
+
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                            <FiUser size={13} />
+                          </span>
+
+                          {item?.created_user || "Admin"}
+
+                        </span>
+                      </td>
+
+                      {/* INVOICE */}
+
+                      <td className="px-4 py-4 text-center">
+
+                        <Link href={`/place-gur/id=${item.id}`}>
+
+                          <Tooltip label="View Invoice" withArrow>
+                            <span className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition hover:bg-blue-600 hover:text-white">
+                              <HiOutlineDocumentDownload size={18} />
+                            </span>
+                          </Tooltip>
+
+                        </Link>
+
+                      </td>
+
+                      {/* ACTIONS */}
+
+                      <td className="px-4 py-4">
+
+                        <div className="flex items-center justify-center gap-2">
+
+                          {(item.status === "Pending" &&
+                            role === "Sales Executive") ||
+                          isSalesManager ? (
+
+                            <Link href={`/place-gur/edit-order/id=${item.id}`}>
+                              <ActionButton title="Edit Order" color="blue">
+                                <FiEdit size={16} />
+                              </ActionButton>
+                            </Link>
+
+                          ) : canManageOrders ? null : (
+
+                            <ActionButton title="Not Available" color="gray">
+                              <FiEdit size={16} />
+                            </ActionButton>
+
+                          )}
+
+                          {canManageOrders && (
+
+                            <>
+
+                              {isHR && (
+                                <ActionButton
+                                  title="Delete Order"
+                                  color="red"
+                                  onClick={() => deleteItem(item)}
                                 >
-                                  <span className="text-sm">
-                                    {item?.fulfillment?.consignment_id ||
-                                      "null"}
-                                  </span>
-                                </Link>
-                              ) : (
-                                <button
-                                  onClick={() => retryCourier(item)}
-                                  className="px-3 py-2 rounded bg-emerald-600 text-white flex gap-2  hover:bg-emerald-700"
-                                >
-                                  {" "}
-                                  <IoIosSend />
-                                  <span>resend</span>
-                                </button>
+                                  <RiDeleteBinLine size={17} />
+                                </ActionButton>
                               )}
-                            </td>
 
-                            <td className="px-4 py-3">
-                              <span className="text-sm ">
-                                {item.customer?.name}
-                              </span>
-                            </td>
-
-                            <td className="px-4 py-3">
-                              <span className="text-sm font-semibold ">
-                                <a
-                                  href={`tel:${item.customer?.phone}`}
+                              {isHR && (
+                                <ActionButton
+                                  title="Print Sticker"
+                                  color="blue"
+                                  onClick={() => stickerStatus(item)}
                                 >
-                                  {item.customer?.phone}
-                                </a>
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="text-sm font-bold">
-                                -{item?.totals?.discount}tk
-                              </span>
-                            </td>
+                                  <FaPrint size={15} />
+                                </ActionButton>
+                              )}
 
-                            <td className="px-4 py-3">
-                              <span className="text-sm  font-bold">
-                                {item?.totals?.payment}tk
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="text-sm  font-bold">
-                                {item?.totals?.cod}/-
-                              </span>
-                            </td>
-
-                            <td className="px-4 py-3">
-                              <span className="font-serif">
-                                <span
-                                  className={`${
-                                    item?.status?.toLowerCase() === "pending" &&
-                                    "text-gray-700 bg-gray-200"
-                                  } ${
-                                    item?.status?.toLowerCase() === "hold" &&
-                                    "text-gray-700 bg-gray-200"
-                                  } ${
-                                    item?.status?.toLowerCase() ===
-                                      "processing" &&
-                                    "text-yellow-500 bg-yellow-100"
-                                  } ${
-                                    item?.status?.toLowerCase() === "shipped" &&
-                                    "text-indigo-500 bg-indigo-100"
-                                  } ${
-                                    item?.status?.toLowerCase() ===
-                                      "delivered" &&
-                                    "text-green-500 bg-green-200"
-                                  } ${
-                                    item?.status?.toLowerCase() ===
-                                      "returned" && "bg-teal-100 text-teal-500"
-                                  } ${
-                                    item?.status?.toLowerCase() ===
-                                      "cancelled" && "bg-red-100 text-red-500"
-                                  } inline-flex px-2 text-xs capitalize font-medium leading-5 rounded-full`}
-                                >
-                                  {item?.status}
-                                </span>
-                              </span>
-                            </td>
-                            <td
-                              className={`px-4 py-3 text-center ${
-                                user.staff_role === "HR" ||
-                                user.staff_role === "Admin" ||
-                                user.staff_role === "Sales Manager"
-                                  ? ""
-                                  : "hidden"
-                              }`}
-                            >
-                              <select
-                                className="block cursor-pointer  px-2 py-1  focus:outline-none  form-select  border-gray-200  focus:shadow-none focus:ring  leading-5 border  bg-gray-50 h-8 rounded-md text-xs w-28"
-                                onChange={(e) => onStatusChanged(e, item.id)}
-                              >
-                                <option
-                                  value={item.status}
-                                  className="capitalize"
-                                  hidden
-                                >
-                                  {item.status}
-                                </option>
-
-                                <option value="pending">Pending</option>
-                                {user.staff_role !== "Sales Manager" && (
-                                  <option value="processing">Processing</option>
-                                )}
-                                {user.staff_role !== "Sales Manager" && (
-                                  <option value="shipped">Shipped</option>
-                                )}
-                                {user.staff_role !== "Sales Manager" && (
-                                  <option value="delivered">Delivered</option>
-                                )}
-
-                                <option value="Hold">Hold</option>
-                                {user.staff_role !== "Sales Manager" && (
-                                  <option value="returned">Returned</option>
-                                )}
-
-                                <option value="cancelled">Cancelled</option>
-                              </select>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="font-serif">
-                                <span
-                                  className={`${
-                                    item.customer_details?.order_from ===
-                                      "Messenger Order" &&
-                                    "text-green-500 bg-green-100"
-                                  } ${
-                                    item.customer_details?.order_from ===
-                                      "Phone Call Order" &&
-                                    "text-gray-500 bg-gray-100"
-                                  } ${
-                                    item.customer_details?.order_from ===
-                                      "Website Order" &&
-                                    "text-indigo-500 bg-indigo-100"
-                                  } ${
-                                    item.customer_details?.order_from ===
-                                      "WhatsApp Order" &&
-                                    "text-orange-500 bg-orange-100"
-                                  }  inline-flex px-2 text-xs capitalize font-medium leading-5 rounded-full`}
-                                >
-                                  {item.meta?.source || "null"}
-                                </span>
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="text-sm uppercase  font-semibold rounded-full px-3 py-1 text-indigo-500 bg-indigo-100">
-                                {item?.categories}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="text-sm font-semibold">
-                                {formatDates(item?.created_at)}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="text-sm font-semibold">
-                                {item?.created_user || "null"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <Link href={`/place-gur/id=${item.id}`}>
-                                <Tooltip label="Invoice" color="blue" withArrow>
-                                  <span className="text-sub-title flex items-center justify-center font-semibold cursor-pointer hover:text-blue-400">
-                                    <HiOutlineDocumentDownload size={18} />
-                                  </span>
-                                </Tooltip>
+                              <Link href={`/place-gur/edit-order/id=${item.id}`}>
+                                <ActionButton title="Edit Order" color="blue">
+                                  <FiEdit size={16} />
+                                </ActionButton>
                               </Link>
-                            </td>
 
-                            {(item.status === "Pending" &&
-                              user.staff_role === "Sales Executive") ||
-                            user?.staff_role === "Sales Manager" ? (
-                              <td className="px-4 py-3 ">
-                                <Link
-                                  href={`/place-gur/edit-order/id=${item.id}`}
-                                >
-                                  <Tooltip label="Edit" color="blue" withArrow>
-                                    <span className="cursor-pointer hover:text-blue-400 items-center justify-center flex">
-                                      <FiEdit size={16} />
-                                    </span>
-                                  </Tooltip>
-                                </Link>
-                              </td>
-                            ) : (
-                              <td
-                                className={`${
-                                  (user.staff_role === "HR" ||
-                                    user?.staff_role === "Admin") &&
-                                  "hidden"
-                                }`}
+                              <ActionButton
+                                title="Print Invoice"
+                                color="green"
+                                onClick={() => statusUpdate(item)}
                               >
-                                <Tooltip
-                                  label="Not Available"
-                                  color="orange"
-                                  withArrow
-                                >
-                                  <span className="items-center text-slate-400 justify-center flex">
-                                    <FiEdit size={16} />
-                                  </span>
-                                </Tooltip>
-                              </td>
-                            )}
+                                <AiOutlinePrinter size={18} />
+                              </ActionButton>
 
-                            {(user.staff_role === "HR" ||
-                              user.staff_role === "Admin") && (
-                              <td className="px-4 py-3">
-                                <div className="text-sm font-semibold flex justify-start gap-5 text-sub-title items-center">
-                                  {user.staff_role === "HR" && (
-                                    <Tooltip
-                                      label="Delete"
-                                      color="red"
-                                      withArrow
-                                    >
-                                      <span
-                                        className="cursor-pointer hover:text-blue-400"
-                                        onClick={() => deleteItem(item)}
-                                      >
-                                        <RiDeleteBinLine size={16} />
-                                      </span>
-                                    </Tooltip>
-                                  )}
-                                  {user.staff_role === "HR" && (
-                                    <Tooltip
-                                      label="Sticker"
-                                      color="blue"
-                                      withArrow
-                                    >
-                                      <span
-                                        className="cursor-pointer hover:text-blue-400"
-                                        onClick={() => stickerStatus(item)}
-                                      >
-                                        <FaPrint size={16} />
-                                      </span>
-                                    </Tooltip>
-                                  )}
+                            </>
 
-                                  <Link
-                                    href={`/place-gur/edit-order/id=${item.id}`}
-                                  >
-                                    <Tooltip
-                                      label="Edit"
-                                      color="blue"
-                                      withArrow
-                                    >
-                                      <span className="cursor-pointer hover:text-blue-400">
-                                        <FiEdit size={16} />
-                                      </span>
-                                    </Tooltip>
-                                  </Link>
+                          )}
 
-                                  <Tooltip
-                                    label="Print"
-                                    color="green"
-                                    withArrow
-                                  >
-                                    <span
-                                      className="cursor-pointer hover:text-blue-400"
-                                      onClick={() => statusUpdate(item)}
-                                    >
-                                      <AiOutlinePrinter size={20} />
-                                    </span>
-                                  </Tooltip>
-                                </div>
-                              </td>
-                            )}
-                          </tr>
-                        )
-                    )}
-                </>
+                        </div>
+
+                      </td>
+
+                    </tr>
+
+                  );
+                })}
+
               </tbody>
+
             </table>
-          )}
+
+          </div>
+
+        )}
+
+        {/* TABLE FOOTER */}
+
+        {!loading && orders.length > 0 && (
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 bg-gray-50/70 px-4 py-4 sm:px-5">
+
+            <p className="text-xs text-gray-500">
+              Showing{" "}
+              <strong className="text-gray-700">
+                {(page - 1) * pageSize + 1}
+              </strong>
+              {" - "}
+              <strong className="text-gray-700">
+                {Math.min(page * pageSize, totalOrders)}
+              </strong>
+              {" of "}
+              <strong className="text-gray-700">
+                {totalOrders}
+              </strong>
+              {" orders"}
+            </p>
+
+            {totalPages > 1 && (
+              <Pagination
+                total={totalPages}
+                value={page}
+                onChange={setPage}
+                boundaries={1}
+                siblings={1}
+                color="blue"
+                radius="md"
+                size="sm"
+              />
+            )}
+
+          </div>
+
+        )}
+
+      </section>
+
+      {/* DELETE CONFIRMATION MODAL */}
+
+      <Modal
+        opened={opened}
+        onClose={closeModal}
+        centered
+        withCloseButton={false}
+        radius="xl"
+        size="md"
+        overlayProps={{
+          backgroundOpacity: 0.55,
+          blur: 3,
+        }}
+      >
+
+        <div className="overflow-hidden rounded-2xl">
+
+          <div className="flex flex-col items-center px-5 py-7 text-center">
+
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-500">
+              <RiDeleteBinLine size={30} />
+            </div>
+
+            <h2 className="mt-4 text-xl font-bold text-gray-800">
+              Delete Order?
+            </h2>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Are you sure you want to delete this order?
+              This action cannot be undone.
+            </p>
+
+            {filterOrder && (
+
+              <div className="mt-5 w-full rounded-2xl border border-gray-100 bg-gray-50 p-4 text-left">
+
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-gray-400">
+                    Order ID
+                  </span>
+
+                  <span className="text-sm font-bold text-blue-600">
+                    #{filterOrder.id}
+                  </span>
+                </div>
+
+                <div className="my-3 h-px bg-gray-200" />
+
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-gray-400">
+                    Customer
+                  </span>
+
+                  <span className="text-sm font-semibold text-gray-700">
+                    {filterOrder?.customer?.name ||
+                      filterOrder?.customer_details?.customer_name ||
+                      "Unknown"}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-gray-400">
+                    COD Amount
+                  </span>
+
+                  <span className="text-sm font-bold text-gray-800">
+                    ৳{formatMoney(filterOrder?.totals?.cod)}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-gray-400">
+                    Status
+                  </span>
+
+                  <StatusBadge status={filterOrder.status} />
+                </div>
+
+              </div>
+
+            )}
+
+            <div className="mt-6 grid w-full grid-cols-2 gap-3">
+
+              <button
+                type="button"
+                onClick={closeModal}
+                className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={() => DeleteOrder(filterOrder)}
+                disabled={!filterOrder}
+                className="rounded-xl bg-red-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-600 disabled:opacity-50"
+              >
+                Yes, Delete
+              </button>
+
+            </div>
+
+          </div>
+
         </div>
-      </div>
-      {orders?.length >= 15 && (
-        <div className="bg-white py-3 justify-center flex">
-          <Pagination
-            total={Math.ceil(orders?.length / 15)}
-            boundaries={1}
-            defaultValue={page ? page : 1}
-            onChange={(i) => setPage(i)}
-          />
-        </div>
-      )}
+
+      </Modal>
+
     </main>
   );
 };

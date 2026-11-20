@@ -1,15 +1,18 @@
-import React, { useState } from "react";
+
+import React from "react";
+
 import { TbCurrencyTaka } from "react-icons/tb";
-import { numberWithCommas } from "@/app/utils/helpers";
 import { FiLayers, FiShoppingCart } from "react-icons/fi";
 import { ImCreditCard } from "react-icons/im";
+
+import { numberWithCommas } from "@/app/utils/helpers";
 import { doubleDigit } from "@/admin/utils/helpers";
+
 import { useSelector } from "react-redux";
 import { selectUser } from "@/app/redux/slices/authSlice";
 
-const PriceOverview = (item) => {
-  const user = useSelector(selectUser)
-const counter=(item?.counter);
+const PriceOverview = ({ counter }) => {
+  const user = useSelector(selectUser);
 
   const ConfigPriceOverview = [
     {
@@ -17,78 +20,199 @@ const counter=(item?.counter);
       icon: FiLayers,
       price: counter?.todayTotalOrderAmount || 0,
       order: counter?.todayTotalOrder || 0,
-      style: "bg-teal-500",
+
+      style: "from-teal-500 via-teal-500 to-cyan-600",
+      iconBg: "bg-white/20",
+      accent: "bg-teal-200",
     },
+
     {
       title: "Yesterday Orders",
       icon: FiLayers,
       price: counter?.yesterdayTotalOrderAmount || 0,
       order: counter?.yesterdayTotalOrder || 0,
-      style: "bg-orange-400",
+
+      style: "from-orange-400 via-orange-500 to-amber-500",
+      iconBg: "bg-white/20",
+      accent: "bg-orange-200",
     },
+
     {
       title: "This Month",
       icon: FiShoppingCart,
-      price: (user?.staff_role === "HR" ? counter?.thisMonthTotalOrderAmount : 0) ||  0,
+      price:
+        (user?.staff_role === "HR"
+          ? counter?.thisMonthTotalOrderAmount
+          : 0) || 0,
+
       order: counter?.thisMonthTotalOrder || 0,
-      style: "bg-blue-500",
+
+      style: "from-blue-500 via-blue-600 to-indigo-600",
+      iconBg: "bg-white/20",
+      accent: "bg-blue-200",
     },
+
     {
       title: "All-Time Sales",
       icon: ImCreditCard,
-      price: (user?.staff_role === "HR" ? counter?.totalOrderAmount : 0) || 0,
+
+      price:
+        (user?.staff_role === "HR"
+          ? counter?.totalOrderAmount
+          : 0) || 0,
+
       order: counter?.totalOrder || 0,
-      style: "bg-green-500",
+
+      style: "from-green-500 via-emerald-500 to-green-600",
+      iconBg: "bg-white/20",
+      accent: "bg-green-200",
     },
   ];
 
   return (
-    <div className="grid gap-4 mb-4 md:grid-cols-2 xl:grid-cols-4">
-      {ConfigPriceOverview &&
-        ConfigPriceOverview?.map((item) => (
+    <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+      {ConfigPriceOverview.map((item) => {
+        const Icon = item.icon;
+
+        return (
           <div
             key={item.title}
-            className="min-w-0 rounded-lg overflow-hidden bg-white  flex justify-center h-full"
+            className="group relative min-w-0 overflow-hidden rounded-2xl bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
           >
+
+            {/* GRADIENT CARD */}
+
             <div
-              className={`${item.style} p-4 border border-gray-200 justify-between  w-full md:p-6 rounded-lg text-white`}
+              className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${item.style} p-5 text-white`}
             >
-              <div className="text-center xl:mb-0 mb-3">
-                <div className="text-center inline-block text-3xl text-white">
-                  <item.icon />
-                </div>
+
+              {/* BACKGROUND DECORATION */}
+
+              <div className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full border-[20px] border-white/10 transition-transform duration-500 group-hover:scale-125" />
+
+              <div className="pointer-events-none absolute -bottom-14 -left-8 h-36 w-36 rounded-full bg-white/5" />
+
+              {/* TOP SECTION */}
+
+              <div className="relative z-10 flex items-center justify-between">
+
                 <div>
-                  <p className="mb-3 text-base font-medium text-gray-50 dark:text-gray-100">
-                    {item.title}
+                  <p className="text-sm font-medium text-white">
+                    Sales Overview
                   </p>
-                  <div className="text-2xl flex items-center justify-center font-bold leading-none text-gray-50 dark:text-gray-50">
-                    <TbCurrencyTaka size={24} />
-                    <span>{numberWithCommas(item.price)}</span>
-                  </div>
+
+                  <h3 className="mt-1 text-lg font-bold tracking-wide text-white">
+                    {item.title}
+                  </h3>
                 </div>
-                <div className="flex flex-row md:flex-row text-center text-xs font-normal text-gray-50">
-                  <div className="px-1 mt-3 flex items-center">
-                    <span>Orders : {doubleDigit(item.order)}</span>
-                  </div>
-                  <div className="px-1 mt-3 flex items-center">
-                    <span>Paid :</span>
-                    <span className="font-bold">
-                      <TbCurrencyTaka size={16} />
-                    </span>
-                    <span>00.0</span>
-                  </div>
-                  <div className="px-1 mt-3 flex items-center">
-                    <span>COD :</span>
-                    <span className="font-bold">
-                      <TbCurrencyTaka size={16} />
-                    </span>
-                    <span>{numberWithCommas(item.price)}</span>
-                  </div>
+
+                {/* ICON */}
+
+                <div
+                  className={`flex h-12 w-12 items-center justify-center rounded-2xl ${item.iconBg} shadow-inner backdrop-blur-sm transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110`}
+                >
+                  <Icon className="h-6 w-6 text-white" />
                 </div>
+
               </div>
+
+              {/* PRICE */}
+
+              <div className="relative z-10 mt-6">
+
+                <p className="mb-1 text-xs font-medium uppercase tracking-wider text-white/70">
+                  Total Amount
+                </p>
+
+                <div className="flex min-w-0 items-center gap-1">
+
+                  <TbCurrencyTaka className="h-7 w-7 shrink-0" />
+
+                  <h2 className="min-w-0 break-all text-2xl font-extrabold tracking-tight sm:text-3xl">
+                    {numberWithCommas(item.price)}
+                  </h2>
+
+                </div>
+
+              </div>
+
+              {/* DIVIDER */}
+
+              <div className="relative z-10 my-5 h-px bg-white/20" />
+
+              {/* BOTTOM DETAILS */}
+
+              <div className="relative z-10 grid grid-cols-3 gap-2">
+
+                {/* ORDERS */}
+
+                <div className="min-w-0">
+
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-white/70 sm:text-xs">
+                    Orders
+                  </p>
+
+                  <p className="mt-1 truncate text-sm font-bold text-white sm:text-base">
+                    {doubleDigit(item.order)}
+                  </p>
+
+                </div>
+
+                {/* PAID */}
+
+                <div className="min-w-0 border-l border-white/20 pl-2">
+
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-white/70 sm:text-xs">
+                    Paid
+                  </p>
+
+                  <div className="mt-1 flex items-center gap-0.5">
+
+                    <TbCurrencyTaka className="h-3.5 w-3.5 shrink-0" />
+
+                    <p className="truncate text-sm font-bold text-white sm:text-base">
+                      00.0
+                    </p>
+
+                  </div>
+
+                </div>
+
+                {/* COD */}
+
+                <div className="min-w-0 border-l border-white/20 pl-2">
+
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-white/70 sm:text-xs">
+                    COD
+                  </p>
+
+                  <div className="mt-1 flex items-center gap-0.5">
+
+                    <TbCurrencyTaka className="h-3.5 w-3.5 shrink-0" />
+
+                    <p className="truncate text-sm font-bold text-white sm:text-base">
+                      {numberWithCommas(item.price)}
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* BOTTOM ACCENT */}
+
+              <div
+                className={`absolute bottom-0 left-0 h-1 w-0 ${item.accent} transition-all duration-500 group-hover:w-full`}
+              />
+
             </div>
+
           </div>
-        ))}
+        );
+      })}
+
     </div>
   );
 };
