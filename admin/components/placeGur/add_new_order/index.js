@@ -16,7 +16,6 @@ import {
   orderGurValidationSchemaCOD,
   orderValidationSchemaCOD,
 } from "@/lib/validationSchema";
-import { updateCounters } from "@/lib/counters";
 import { ERROR_MEANINGS } from "@/admin/configs";
 import { updateOrderSummary } from "@/lib/orderSummary";
 
@@ -249,11 +248,12 @@ const AddOrder = ({ onClick }) => {
 
         try {
           await db.collection("ordersGur").doc(orderID).set(orderData);
-          updateCounters(orderData);
+
+          // Update all order summaries
           try {
             await updateOrderSummary(orderData);
-          } catch (summaryError) {
-            console.error("Order summary update failed:", summaryError);
+          } catch (error) {
+            console.error("Order summary update failed:", error);
           }
         } catch (error) {
           notifications.show({

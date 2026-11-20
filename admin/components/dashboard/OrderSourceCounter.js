@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import { db } from "@/app/utils/firebase";
 
@@ -53,7 +52,7 @@ export default function OrderSourceCounter() {
           console.error(err);
           setError(err.message || "Data loading failed");
           setLoading(false);
-        }
+        },
       );
 
     return () => unsubscribe();
@@ -71,39 +70,45 @@ export default function OrderSourceCounter() {
   }, [summary]);
 
   // Exclude Tele Sales and Exchange from main totals
-  const includedRows = rows.filter(
-    (row) => !EXCLUDED.includes(row.key)
-  );
+  const includedRows = rows.filter((row) => !EXCLUDED.includes(row.key));
 
-  const totalOrders = includedRows.reduce(
-    (sum, row) => sum + row.orders,
-    0
-  );
+  const totalOrders = includedRows.reduce((sum, row) => sum + row.orders, 0);
 
-  const totalKg = includedRows.reduce(
-    (sum, row) => sum + row.kg,
-    0
-  );
+  const totalKg = includedRows.reduce((sum, row) => sum + row.kg, 0);
 
   // All-source denominator for individual channel bars
-  const allTotalOrders = rows.reduce(
-    (sum, row) => sum + row.orders,
-    0
-  );
+  const allTotalOrders = rows.reduce((sum, row) => sum + row.orders, 0);
 
-  const allTotalKg = rows.reduce(
-    (sum, row) => sum + row.kg,
-    0
-  );
+  const allTotalKg = rows.reduce((sum, row) => sum + row.kg, 0);
 
   const averageKg = totalOrders ? totalKg / totalOrders : 0;
-  const totalAverageKg = totalOrders
-    ? allTotalKg / allTotalOrders
-    : 0;
+  const totalAverageKg = totalOrders ? allTotalKg / allTotalOrders : 0;
+
+  // Staff-wise order summary
+  const staffRows = useMemo(() => {
+    const staff = summary?.staff || {};
+
+    return Object.entries(staff)
+      .map(([key, value]) => ({
+        key,
+        name: value?.name || "Unknown Staff",
+        orders: Number(value?.orders || 0),
+        kg: Number(value?.kg || 0),
+      }))
+      .sort((a, b) => b.orders - a.orders);
+  }, [summary]);
+
+  const staffTotalOrders = staffRows.reduce(
+    (sum, staff) => sum + staff.orders,
+    0,
+  );
+
+  const staffTotalKg = staffRows.reduce((sum, staff) => sum + staff.kg, 0);
+
+  const staffMaxOrders = Math.max(1, ...staffRows.map((staff) => staff.orders));
 
   return (
     <section className="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-
       {/* Header */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -161,10 +166,8 @@ export default function OrderSourceCounter() {
 
       {/* Summary Cards */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-
         {/* TOTAL SUMMARY CARD */}
         <div className="mt-5 relative overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-5 shadow-sm">
-
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-xl font-extrabold tracking-wide text-blue-800">
@@ -194,7 +197,6 @@ export default function OrderSourceCounter() {
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-
             {/* ORDERS */}
             <div className="rounded-xl border border-purple-100 bg-white p-4">
               <p className="text-xs font-semibold tracking-wide text-blue-600">
@@ -219,9 +221,7 @@ export default function OrderSourceCounter() {
                 <span className="ml-1 text-base">KG</span>
               </h4>
 
-              <p className="mt-1 text-xs text-gray-400">
-                Total Order Weight
-              </p>
+              <p className="mt-1 text-xs text-gray-400">Total Order Weight</p>
             </div>
 
             {/* AVERAGE */}
@@ -235,16 +235,13 @@ export default function OrderSourceCounter() {
                 <span className="ml-1 text-base">KG</span>
               </h4>
 
-              <p className="mt-1 text-xs text-gray-400">
-                Average Per Order
-              </p>
+              <p className="mt-1 text-xs text-gray-400">Average Per Order</p>
             </div>
           </div>
         </div>
 
         {/* AD SUMMARY CARD */}
         <div className="mt-5 relative overflow-hidden rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-5 shadow-sm">
-
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-xl font-extrabold tracking-wide text-purple-800">
@@ -280,7 +277,6 @@ export default function OrderSourceCounter() {
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-
             {/* ORDERS */}
             <div className="rounded-xl border border-purple-100 bg-white p-4">
               <p className="text-xs font-semibold tracking-wide text-purple-600">
@@ -305,9 +301,7 @@ export default function OrderSourceCounter() {
                 <span className="ml-1 text-base">KG</span>
               </h4>
 
-              <p className="mt-1 text-xs text-gray-400">
-                Total Order Weight
-              </p>
+              <p className="mt-1 text-xs text-gray-400">Total Order Weight</p>
             </div>
 
             {/* AVERAGE */}
@@ -321,9 +315,7 @@ export default function OrderSourceCounter() {
                 <span className="ml-1 text-base">KG</span>
               </h4>
 
-              <p className="mt-1 text-xs text-gray-400">
-                Average Per Order
-              </p>
+              <p className="mt-1 text-xs text-gray-400">Average Per Order</p>
             </div>
           </div>
         </div>
@@ -331,13 +323,9 @@ export default function OrderSourceCounter() {
 
       {/* Loading */}
       {loading ? (
-        <p className="py-10 text-center text-gray-500">
-          Loading counter...
-        </p>
+        <p className="py-10 text-center text-gray-500">Loading counter...</p>
       ) : error ? (
-        <p className="rounded-lg bg-red-50 p-4 text-red-600">
-          {error}
-        </p>
+        <p className="rounded-lg bg-red-50 p-4 text-red-600">{error}</p>
       ) : (
         <>
           <div className="mb-3 flex items-center justify-between">
@@ -352,7 +340,6 @@ export default function OrderSourceCounter() {
 
           {/* Source Cards */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-
             {rows.map((row) => {
               const percentage = allTotalOrders
                 ? (row.orders / allTotalOrders) * 100
@@ -365,7 +352,6 @@ export default function OrderSourceCounter() {
                   key={row.key}
                   className="group relative rounded-xl border border-gray-200 bg-white p-4 transition hover:z-50 hover:border-gray-300 hover:shadow-lg"
                 >
-
                   {/* Source Header */}
                   <div className="mb-3 flex items-start justify-between gap-2">
                     <div>
@@ -422,7 +408,6 @@ export default function OrderSourceCounter() {
                       group-hover:opacity-100 group-hover:translate-y-0
                     "
                   >
-
                     {/* Source Color Accent */}
                     <div
                       className="h-1.5 w-full"
@@ -431,7 +416,6 @@ export default function OrderSourceCounter() {
 
                     {/* Tooltip Header */}
                     <div className="border-b border-gray-100 bg-gray-50/90 px-4 py-3">
-
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex min-w-0 items-center gap-2">
                           <span
@@ -461,7 +445,6 @@ export default function OrderSourceCounter() {
 
                       {/* Quick Stats */}
                       <div className="mt-3 grid grid-cols-2 gap-2">
-
                         <div className="rounded-xl border border-gray-100 bg-white px-3 py-2.5">
                           <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                             Total Products
@@ -482,13 +465,11 @@ export default function OrderSourceCounter() {
                             <span className="text-xs">KG</span>
                           </p>
                         </div>
-
                       </div>
                     </div>
 
                     {/* Product Table */}
                     <div className="p-3">
-
                       <div className="mb-2 flex items-center justify-between px-1">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
                           Product Breakdown
@@ -500,14 +481,10 @@ export default function OrderSourceCounter() {
                       </div>
 
                       <div className="max-h-60 overflow-auto rounded-xl border border-gray-100">
-
                         <table className="w-full border-collapse text-xs">
-
                           <thead className="sticky top-0 z-10 bg-gray-100">
                             <tr className="text-left text-gray-500">
-                              <th className="px-3 py-3 font-bold">
-                                ITEM
-                              </th>
+                              <th className="px-3 py-3 font-bold">ITEM</th>
 
                               <th className="px-3 py-3 text-right font-bold">
                                 QTY
@@ -550,13 +527,11 @@ export default function OrderSourceCounter() {
                               </tr>
                             )}
                           </tbody>
-
                         </table>
                       </div>
 
                       {/* Total and Average */}
                       <div className="mt-3 grid grid-cols-2 gap-2">
-
                         <div
                           className="rounded-xl p-3"
                           style={{
@@ -584,37 +559,204 @@ export default function OrderSourceCounter() {
                             {formatNumber(avg)} KG
                           </p>
                         </div>
-
                       </div>
                     </div>
 
                     {/* Tooltip Footer */}
                     <div className="flex items-center justify-between border-t border-gray-100 px-4 py-2.5">
-
-                      <span className="text-[10px] text-gray-400">
-                        {date}
-                      </span>
+                      <span className="text-[10px] text-gray-400">{date}</span>
 
                       <span className="text-[10px] font-semibold text-green-600">
                         ● LIVE DATA
                       </span>
-
                     </div>
-
                   </div>
                   {/* END MODERN TOOLTIP */}
-
                 </div>
               );
             })}
-
           </div>
         </>
       )}
 
+      {/* STAFF WISE ORDER COUNTER */}
+      <div className="mt-6 overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-blue-50 shadow-sm">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-indigo-100 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2m16 0v-2a4 4 0 00-3-3.87M10 11a4 4 0 100-8 4 4 0 000 8zm10-4a4 4 0 01-3 3.87"
+                />
+              </svg>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-extrabold text-gray-800">
+                Staff Order Counter
+              </h3>
+
+              <p className="text-xs text-gray-500">
+                Staff-wise order creation performance
+              </p>
+            </div>
+
+            <span className="rounded-full bg-green-100 px-2 py-1 text-[10px] font-bold text-green-700">
+              LIVE
+            </span>
+          </div>
+
+          <span className="rounded-lg border border-indigo-100 bg-white px-3 py-2 text-xs font-semibold text-indigo-700">
+            {viewMode === "overall" ? "ALL TIME" : date}
+          </span>
+        </div>
+
+        {/* Summary */}
+        <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-indigo-100 bg-white p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Total Staff
+            </p>
+
+            <h4 className="mt-2 text-3xl font-extrabold text-indigo-700">
+              {staffRows.length}
+            </h4>
+          </div>
+
+          <div className="rounded-xl border border-blue-100 bg-white p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Staff Orders
+            </p>
+
+            <h4 className="mt-2 text-3xl font-extrabold text-blue-700">
+              {formatNumber(staffTotalOrders, 0)}
+            </h4>
+          </div>
+
+          <div className="rounded-xl border border-green-100 bg-white p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Staff Order Weight
+            </p>
+
+            <h4 className="mt-2 text-3xl font-extrabold text-green-700">
+              {formatNumber(staffTotalKg)} KG
+            </h4>
+          </div>
+        </div>
+
+        {/* Staff List */}
+        <div className="px-4 pb-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="text-sm font-bold text-gray-700">
+              Individual Staff Performance
+            </h4>
+
+            <span className="text-xs text-gray-400">
+              {staffRows.length} Staff
+            </span>
+          </div>
+
+          {staffRows.length > 0 ? (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {staffRows.map((staff, index) => {
+                const percentage = staffTotalOrders
+                  ? (staff.orders / staffTotalOrders) * 100
+                  : 0;
+
+                const colors = [
+                  "#2563eb",
+                  "#16a34a",
+                  "#7c3aed",
+                  "#d97706",
+                  "#0d9488",
+                  "#ea580c",
+                ];
+
+                const color = colors[index % colors.length];
+
+                return (
+                  <div
+                    key={staff.key}
+                    className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
+                          style={{ backgroundColor: color }}
+                        >
+                          {staff.name.charAt(0).toUpperCase()}
+                        </div>
+
+                        <div className="min-w-0">
+                          <h5 className="truncate text-sm font-bold text-gray-800">
+                            {staff.name}
+                          </h5>
+
+                          <p className="mt-0.5 text-xs text-gray-400">
+                            Staff #{index + 1}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <h4 className="text-xl font-extrabold text-gray-800">
+                          {formatNumber(staff.orders, 0)}
+                        </h4>
+
+                        <p className="text-[10px] text-gray-400">Orders</p>
+                      </div>
+                    </div>
+
+                    {/* Progress */}
+                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-gray-100">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${percentage}%`,
+                          backgroundColor: color,
+                        }}
+                      />
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-500">
+                        {formatNumber(percentage)}%
+                      </span>
+
+                      <span className="text-xs font-bold text-gray-700">
+                        {formatNumber(staff.kg)} KG
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-indigo-200 bg-white/70 p-8 text-center">
+              <p className="text-sm font-semibold text-gray-600">
+                No staff order data available
+              </p>
+
+              <p className="mt-1 text-xs text-gray-400">
+                New orders will automatically update staff performance.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Footer */}
       <div className="mt-5 flex flex-wrap justify-between gap-2 border-t pt-3 text-xs text-gray-400">
-
         <span>Firestore: orderSummary</span>
 
         <span>
@@ -622,7 +764,6 @@ export default function OrderSourceCounter() {
             ? "Overall Lifetime Summary"
             : `Daily Report: ${date}`}
         </span>
-
       </div>
     </section>
   );
