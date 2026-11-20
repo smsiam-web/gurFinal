@@ -190,7 +190,7 @@ const SearchOrder = ({ onClick }) => {
   useEffect(() => {
     const privileged = ["Admin", "HR", "CEO"].includes(user?.staff_role);
     setLimits(privileged);
-    setLimit(privileged ? 1000 : 30);
+    setLimit(privileged ? 30 : 30);
   }, [user]);
 
   // ✅ Firebase real-time listener

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Tooltip, Modal, Pagination } from "@mantine/core";
 import Link from "next/link";
@@ -25,10 +24,7 @@ import { AiOutlinePrinter } from "react-icons/ai";
 import { FaPrint } from "react-icons/fa";
 import { RiDeleteBinLine } from "react-icons/ri";
 import { IoIosSend } from "react-icons/io";
-import {
-  MdOutlineLocalShipping,
-  MdOutlineShoppingBag,
-} from "react-icons/md";
+import { MdOutlineLocalShipping, MdOutlineShoppingBag } from "react-icons/md";
 import { TbRefresh, TbTruckDelivery } from "react-icons/tb";
 
 import generateBulkPrintStickers from "./generateBulkSticker";
@@ -78,11 +74,13 @@ const STATUS_CONFIG = {
 const getStatus = (status) => {
   const key = String(status || "pending").toLowerCase();
 
-  return STATUS_CONFIG[key] || {
-    label: status || "Unknown",
-    color: "bg-gray-100 text-gray-600 border-gray-200",
-    dot: "bg-gray-400",
-  };
+  return (
+    STATUS_CONFIG[key] || {
+      label: status || "Unknown",
+      color: "bg-gray-100 text-gray-600 border-gray-200",
+      dot: "bg-gray-400",
+    }
+  );
 };
 
 const formatMoney = (value) =>
@@ -111,12 +109,7 @@ const StatusBadge = ({ status }) => {
 // ACTION BUTTON
 // --------------------------------------------------
 
-const ActionButton = ({
-  title,
-  onClick,
-  children,
-  color = "gray",
-}) => {
+const ActionButton = ({ title, onClick, children, color = "gray" }) => {
   const colors = {
     blue: "bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white",
     green: "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white",
@@ -192,12 +185,7 @@ const AllOrder = () => {
 
   const updateStatus = async (item, newStatus) => {
     try {
-      const success = await updateOrderStatusGur(
-        db,
-        item.id,
-        item,
-        newStatus
-      );
+      const success = await updateOrderStatusGur(db, item.id, item, newStatus);
 
       if (success) {
         notifications.show({
@@ -282,10 +270,7 @@ const AllOrder = () => {
     setOpened(false);
 
     try {
-      await db
-        .collection("ordersGur")
-        .doc(item.id)
-        .delete();
+      await db.collection("ordersGur").doc(item.id).delete();
 
       notifications.show({
         title: "Delete Successfully",
@@ -336,7 +321,7 @@ const AllOrder = () => {
             message: error.message,
             color: "red",
           });
-        }
+        },
       );
 
     return () => unSub();
@@ -354,7 +339,7 @@ const AllOrder = () => {
       },
       (error) => {
         console.error("Config loading error:", error);
-      }
+      },
     );
 
     return () => unSub();
@@ -383,23 +368,18 @@ const AllOrder = () => {
         amount_to_collect: `${item?.totals?.cod || 0}`,
       };
 
-      const resp = await fetch(
-        "/api/pathaoAamWala/place-order",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(orderPayload),
-        }
-      );
+      const resp = await fetch("/api/pathaoAamWala/place-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderPayload),
+      });
 
       const result = await resp.json();
 
       if (!resp.ok || result?.type === "error") {
-        throw new Error(
-          result?.message || "Pathao order failed"
-        );
+        throw new Error(result?.message || "Pathao order failed");
       }
 
       const fulfillmentPatch = {
@@ -425,10 +405,7 @@ const AllOrder = () => {
         },
       };
 
-      await db
-        .collection("ordersGur")
-        .doc(item.id)
-        .update(normalized);
+      await db.collection("ordersGur").doc(item.id).update(normalized);
 
       notifications.show({
         title: "Pathao Success",
@@ -440,7 +417,6 @@ const AllOrder = () => {
         color: "green",
         autoClose: 6000,
       });
-
     } catch (error) {
       console.error("Courier create failed:", error);
 
@@ -461,10 +437,7 @@ const AllOrder = () => {
 
   const totalPages = Math.ceil(orders.length / pageSize);
 
-  const paginatedOrders = orders.slice(
-    (page - 1) * pageSize,
-    page * pageSize
-  );
+  const paginatedOrders = orders.slice((page - 1) * pageSize, page * pageSize);
 
   // --------------------------------------------------
   // ORDER SUMMARY
@@ -473,19 +446,19 @@ const AllOrder = () => {
   const totalOrders = orders.length;
 
   const pendingOrders = orders.filter(
-    (item) => item.status?.toLowerCase() === "pending"
+    (item) => item.status?.toLowerCase() === "pending",
   ).length;
 
   const processingOrders = orders.filter(
-    (item) => item.status?.toLowerCase() === "processing"
+    (item) => item.status?.toLowerCase() === "processing",
   ).length;
 
   const shippedOrders = orders.filter(
-    (item) => item.status?.toLowerCase() === "shipped"
+    (item) => item.status?.toLowerCase() === "shipped",
   ).length;
 
   const deliveredOrders = orders.filter(
-    (item) => item.status?.toLowerCase() === "delivered"
+    (item) => item.status?.toLowerCase() === "delivered",
   ).length;
 
   // --------------------------------------------------
@@ -493,14 +466,11 @@ const AllOrder = () => {
   // --------------------------------------------------
 
   return (
-   <main className="w-full min-w-0 max-w-full overflow-x-hidden space-y-5">
-
+    <main className="w-full min-w-0 max-w-full overflow-x-hidden space-y-5">
       {/* PAGE HEADER */}
 
       <div className="flex flex-wrap items-center justify-between gap-4">
-
         <div className="flex items-center gap-3">
-
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
             <MdOutlineShoppingBag size={24} />
           </div>
@@ -514,20 +484,17 @@ const AllOrder = () => {
               View and manage all your store orders
             </p>
           </div>
-
         </div>
 
         <span className="inline-flex items-center gap-2 rounded-full border border-green-100 bg-green-50 px-3 py-2 text-xs font-semibold text-green-700">
           <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
           Live Order Updates
         </span>
-
       </div>
 
       {/* SUMMARY CARDS */}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-
         {[
           {
             title: "Total Orders",
@@ -560,7 +527,6 @@ const AllOrder = () => {
             color: "green",
           },
         ].map((card) => {
-
           const colors = {
             blue: "bg-blue-50 text-blue-600",
             amber: "bg-amber-50 text-amber-600",
@@ -575,7 +541,6 @@ const AllOrder = () => {
               className="group rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
             >
               <div className="flex items-center justify-between gap-2">
-
                 <div>
                   <p className="text-xs font-medium text-gray-500">
                     {card.title}
@@ -591,22 +556,18 @@ const AllOrder = () => {
                 >
                   <card.icon size={21} />
                 </div>
-
               </div>
             </div>
           );
         })}
-
       </div>
 
       {/* ORDER TABLE */}
 
-     <section className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-
+      <section className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         {/* TABLE HEADER */}
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-gradient-to-r from-white via-blue-50/40 to-indigo-50/40 px-4 py-4 sm:px-5">
-
           <div>
             <h3 className="text-base font-bold text-gray-800">
               All Order Records
@@ -624,41 +585,29 @@ const AllOrder = () => {
               {totalOrders} Orders
             </span>
           </div>
-
         </div>
 
         {/* LOADING */}
 
         {loading ? (
-
           <div className="flex flex-col items-center justify-center py-20">
-
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600" />
 
             <p className="mt-4 text-sm font-medium text-gray-500">
               Loading orders...
             </p>
-
           </div>
-
         ) : !orders.length ? (
-
           <div className="p-8">
             <NotFound text="order" />
           </div>
-
         ) : (
-
           <div className="w-full min-w-0 max-w-full overflow-x-auto overflow-y-visible overscroll-x-contain">
-
             <table className="w-full min-w-[1550px] border-collapse text-left">
-
               {/* TABLE HEAD */}
 
               <thead className="sticky top-0 z-10 bg-gray-50">
-
                 <tr className="border-b border-gray-100 text-[11px] font-bold uppercase tracking-wider text-gray-500">
-
                   <th className="px-4 py-4">Order ID</th>
 
                   <th className="px-4 py-4">Courier</th>
@@ -692,50 +641,40 @@ const AllOrder = () => {
                   <th className="px-4 py-4 text-center">Invoice</th>
 
                   <th className="px-4 py-4 text-center">Actions</th>
-
                 </tr>
-
               </thead>
 
               {/* TABLE BODY */}
 
               <tbody className="divide-y divide-gray-100">
-
                 {paginatedOrders.map((item) => {
-
                   const isDelivered =
                     item.status?.toLowerCase() === "delivered";
 
-                  const isUrgent =
-                    item.customer_details?.markAs === "Argent";
+                  const isUrgent = item.customer_details?.markAs === "Argent";
 
                   return (
-
                     <tr
                       key={item.id}
                       className={`group transition-all duration-200 hover:bg-blue-50/60 ${
                         item.isFilter
                           ? "bg-sky-50"
                           : isDelivered || isUrgent
-                          ? "bg-green-50/40"
-                          : "bg-white"
+                            ? "bg-green-50/40"
+                            : "bg-white"
                       }`}
                     >
-
                       {/* ORDER ID */}
 
                       <td className="px-4 py-4">
-
                         <span className="inline-flex items-center rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">
                           #{item.orderID || item.id}
                         </span>
-
                       </td>
 
                       {/* COURIER */}
 
                       <td className="px-4 py-4">
-
                         <span className="inline-flex items-center gap-2 text-xs font-semibold text-gray-700">
                           <MdOutlineLocalShipping
                             className="text-blue-500"
@@ -744,17 +683,14 @@ const AllOrder = () => {
 
                           {item?.fulfillment?.courier || "Not Assigned"}
                         </span>
-
                       </td>
 
                       {/* CONSIGNMENT */}
 
                       <td className="px-4 py-4">
-
                         {(item?.fulfillment?.courier === "Pathao" &&
                           item?.fulfillment?.consignment_id) ||
                         item?.fulfillment?.courier !== "Pathao" ? (
-
                           <Link
                             href={
                               item?.fulfillment?.courier === "Pathao"
@@ -764,15 +700,11 @@ const AllOrder = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-
                             <span className="cursor-pointer text-xs font-semibold text-blue-600 hover:underline">
                               {item?.fulfillment?.consignment_id || "—"}
                             </span>
-
                           </Link>
-
                         ) : (
-
                           <button
                             type="button"
                             onClick={() => retryCourier(item)}
@@ -781,23 +713,18 @@ const AllOrder = () => {
                             <IoIosSend size={15} />
                             Resend
                           </button>
-
                         )}
-
                       </td>
 
                       {/* CUSTOMER */}
 
                       <td className="px-4 py-4">
-
                         <div className="flex items-center gap-2.5">
-
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                             <FiUser size={16} />
                           </div>
 
                           <div className="min-w-0">
-
                             <p className="max-w-[170px] truncate text-xs font-bold text-gray-800">
                               {item.customer?.name || "Unknown Customer"}
                             </p>
@@ -808,17 +735,13 @@ const AllOrder = () => {
                                 {item.shipping_address.city}
                               </p>
                             )}
-
                           </div>
-
                         </div>
-
                       </td>
 
                       {/* PHONE */}
 
                       <td className="px-4 py-4">
-
                         <a
                           href={`tel:${item.customer?.phone || ""}`}
                           className="inline-flex items-center gap-2 text-xs font-semibold text-gray-600 transition hover:text-blue-600"
@@ -826,61 +749,47 @@ const AllOrder = () => {
                           <FiPhone size={13} className="text-blue-500" />
                           {item.customer?.phone || "—"}
                         </a>
-
                       </td>
 
                       {/* DISCOUNT */}
 
                       <td className="px-4 py-4 text-right">
-
                         <span className="text-xs font-semibold text-red-500">
                           -৳{formatMoney(item?.totals?.discount)}
                         </span>
-
                       </td>
 
                       {/* PAID */}
 
                       <td className="px-4 py-4 text-right">
-
                         <span className="text-xs font-semibold text-green-600">
                           ৳{formatMoney(item?.totals?.payment)}
                         </span>
-
                       </td>
 
                       {/* COD */}
 
                       <td className="px-4 py-4 text-right">
-
                         <span className="text-sm font-bold text-gray-800">
                           ৳{formatMoney(item?.totals?.cod)}
                         </span>
-
                       </td>
 
                       {/* STATUS */}
 
                       <td className="px-4 py-4">
-
                         <StatusBadge status={item.status} />
-
                       </td>
 
                       {/* UPDATE STATUS */}
 
                       {canChangeStatus && (
-
                         <td className="px-4 py-4">
-
                           <select
                             value={item.status || "pending"}
-                            onChange={(e) =>
-                              onStatusChanged(e, item.id)
-                            }
+                            onChange={(e) => onStatusChanged(e, item.id)}
                             className="h-9 w-32 cursor-pointer rounded-xl border border-gray-200 bg-white px-2 text-xs font-medium text-gray-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                           >
-
                             <option value="pending">Pending</option>
 
                             {role !== "Sales Manager" && (
@@ -902,119 +811,83 @@ const AllOrder = () => {
                             )}
 
                             <option value="cancelled">Cancelled</option>
-
                           </select>
-
                         </td>
-
                       )}
 
                       {/* SOURCE */}
 
                       <td className="px-4 py-4">
-
                         <span className="inline-flex rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold capitalize text-indigo-600">
                           {item?.meta?.source || "Other"}
                         </span>
-
                       </td>
 
                       {/* CATEGORY */}
 
                       <td className="px-4 py-4">
-
                         <span className="inline-flex rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold uppercase text-gray-600">
                           {item?.categories || "—"}
                         </span>
-
                       </td>
 
                       {/* CREATED AT */}
 
                       <td className="px-4 py-4">
-
                         <span className="whitespace-nowrap text-xs font-medium text-gray-600">
                           {item?.created_at
                             ? formatDates(item.created_at)
                             : "—"}
                         </span>
-
                       </td>
 
                       {/* CREATED BY */}
 
                       <td className="px-4 py-4">
-
                         <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs font-semibold text-gray-600">
-
                           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-600">
                             <FiUser size={13} />
                           </span>
 
                           {item?.created_user || "Unknown"}
-
                         </span>
-
                       </td>
 
                       {/* INVOICE */}
 
                       <td className="px-4 py-4 text-center">
-
                         <Link href={`/orders-gur/invoice/id=${item.id}`}>
-
                           <Tooltip label="View Invoice" withArrow>
-
                             <span className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition hover:bg-blue-600 hover:text-white">
                               <HiOutlineDocumentDownload size={18} />
                             </span>
-
                           </Tooltip>
-
                         </Link>
-
                       </td>
 
                       {/* ACTIONS */}
 
                       <td className="px-4 py-4">
-
                         <div className="flex items-center justify-center gap-2">
-
                           {(item.status === "pending" &&
                             role === "Sales Executive") ||
                           isSalesManager ? (
-
                             <Link
                               href={`/place-order/edit-order/id=${item.id}`}
                             >
-
-                              <ActionButton
-                                title="Edit Order"
-                                color="blue"
-                              >
+                              <ActionButton title="Edit Order" color="blue">
                                 <FiEdit size={16} />
                               </ActionButton>
-
                             </Link>
-
                           ) : canManageOrders ? null : (
-
-                            <ActionButton
-                              title="Not Available"
-                              color="gray"
-                            >
+                            <ActionButton title="Not Available" color="gray">
                               <FiEdit size={16} />
                             </ActionButton>
-
                           )}
 
                           {canManageOrders && (
-
                             <>
-
                               {isHR && (
-
                                 <ActionButton
                                   title="Delete Order"
                                   color="red"
@@ -1022,11 +895,9 @@ const AllOrder = () => {
                                 >
                                   <RiDeleteBinLine size={17} />
                                 </ActionButton>
-
                               )}
 
                               {isHR && (
-
                                 <ActionButton
                                   title="Print Sticker"
                                   color="blue"
@@ -1034,20 +905,14 @@ const AllOrder = () => {
                                 >
                                   <FaPrint size={15} />
                                 </ActionButton>
-
                               )}
 
                               <Link
                                 href={`/place-gur/edit-order/id=${item.id}`}
                               >
-
-                                <ActionButton
-                                  title="Edit Order"
-                                  color="blue"
-                                >
+                                <ActionButton title="Edit Order" color="blue">
                                   <FiEdit size={16} />
                                 </ActionButton>
-
                               </Link>
 
                               <ActionButton
@@ -1057,34 +922,22 @@ const AllOrder = () => {
                               >
                                 <AiOutlinePrinter size={18} />
                               </ActionButton>
-
                             </>
-
                           )}
-
                         </div>
-
                       </td>
-
                     </tr>
-
                   );
                 })}
-
               </tbody>
-
             </table>
-
           </div>
-
         )}
 
         {/* TABLE FOOTER */}
 
         {!loading && orders.length > 0 && (
-
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 bg-gray-50/70 px-4 py-4 sm:px-5">
-
+          <div className="flex flex-wrap items-center justify-center gap-3 border-t border-gray-100 bg-gray-50/70 pt-3 sm:px-5">
             <p className="text-xs text-gray-500">
               Showing{" "}
               <strong className="text-gray-700">
@@ -1095,14 +948,14 @@ const AllOrder = () => {
                 {Math.min(page * pageSize, totalOrders)}
               </strong>
               {" of "}
-              <strong className="text-gray-700">
-                {totalOrders}
-              </strong>
+              <strong className="text-gray-700">{totalOrders}</strong>
               {" orders"}
             </p>
-
+          </div>
+        )}
+        {!loading && orders.length > 0 && (
+          <div className="flex flex-wrap items-center justify-center gap-3 border-t border-gray-100 bg-gray-50/70 px-4 py-4 sm:px-5">
             {totalPages > 1 && (
-
               <Pagination
                 total={totalPages}
                 value={page}
@@ -1113,13 +966,9 @@ const AllOrder = () => {
                 radius="md"
                 size="sm"
               />
-
             )}
-
           </div>
-
         )}
-
       </section>
 
       {/* DELETE CONFIRMATION MODAL */}
@@ -1136,11 +985,8 @@ const AllOrder = () => {
           blur: 3,
         }}
       >
-
         <div className="overflow-hidden rounded-2xl">
-
           <div className="flex flex-col items-center px-5 py-7 text-center">
-
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-500">
               <RiDeleteBinLine size={30} />
             </div>
@@ -1150,16 +996,13 @@ const AllOrder = () => {
             </h2>
 
             <p className="mt-2 text-sm text-gray-500">
-              Are you sure you want to delete this order?
-              This action cannot be undone.
+              Are you sure you want to delete this order? This action cannot be
+              undone.
             </p>
 
             {filterOrder && (
-
               <div className="mt-5 w-full rounded-2xl border border-gray-100 bg-gray-50 p-4 text-left">
-
                 <div className="flex items-center justify-between gap-2">
-
                   <span className="text-xs font-medium text-gray-400">
                     Order ID
                   </span>
@@ -1167,13 +1010,11 @@ const AllOrder = () => {
                   <span className="text-sm font-bold text-blue-600">
                     #{filterOrder.orderID || filterOrder.id}
                   </span>
-
                 </div>
 
                 <div className="my-3 h-px bg-gray-200" />
 
                 <div className="flex items-center justify-between gap-2">
-
                   <span className="text-xs font-medium text-gray-400">
                     Customer
                   </span>
@@ -1183,11 +1024,9 @@ const AllOrder = () => {
                       filterOrder?.customer_details?.customer_name ||
                       "Unknown"}
                   </span>
-
                 </div>
 
                 <div className="mt-3 flex items-center justify-between gap-2">
-
                   <span className="text-xs font-medium text-gray-400">
                     COD Amount
                   </span>
@@ -1195,25 +1034,19 @@ const AllOrder = () => {
                   <span className="text-sm font-bold text-gray-800">
                     ৳{formatMoney(filterOrder?.totals?.cod)}
                   </span>
-
                 </div>
 
                 <div className="mt-3 flex items-center justify-between gap-2">
-
                   <span className="text-xs font-medium text-gray-400">
                     Status
                   </span>
 
                   <StatusBadge status={filterOrder.status} />
-
                 </div>
-
               </div>
-
             )}
 
             <div className="mt-6 grid w-full grid-cols-2 gap-3">
-
               <button
                 type="button"
                 onClick={closeModal}
@@ -1230,15 +1063,10 @@ const AllOrder = () => {
               >
                 Yes, Delete
               </button>
-
             </div>
-
           </div>
-
         </div>
-
       </Modal>
-
     </main>
   );
 };

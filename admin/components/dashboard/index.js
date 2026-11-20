@@ -154,9 +154,9 @@ const DashBoard = () => {
 
         {/* ORDER OVERVIEW */}
 
-        <div className="w-full">
+        {/* <div className="w-full">
           <OrderOverview />
-        </div>
+        </div> */}
 
         {/* ORDER SOURCE COUNTER */}
 
@@ -184,22 +184,6 @@ const DashBoard = () => {
             <StaffOrderCounter />
           </div>
         )} */}
-
-        {/* NEW LAST 7 DAYS CHART */}
-
-        {/* EXISTING CHARTS */}
-
-        {/* RECENT ORDERS */}
-
-        <div className="w-full min-w-0 max-w-full py-6 overflow-hidden">
-          <h2 className="text-title pb-3 font-medium text-lg md:text-xl">
-            Recent Order
-          </h2>
-
-          <div className="w-full min-w-0 max-w-full overflow-hidden">
-            <OrderTable />
-          </div>
-        </div>
       </div>
     </main>
   );

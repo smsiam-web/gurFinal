@@ -55,7 +55,7 @@ export default function OrderSourceCounter() {
           setLoading(false);
         },
       );
-
+ console.log(unsubscribe)
     return () => unsubscribe();
   }, [date, viewMode]);
 
