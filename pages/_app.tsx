@@ -66,7 +66,7 @@ export default function App({ Component, pageProps }: AppProps) {
   }, []);
 
   // Absolute canonical for OG
-  const CANONICAL = `https://aamwala.netlify.app${router.asPath.split("?")[0]}`;
+  const CANONICAL = `https://gur26.netlify.app${router.asPath.split("?")[0]}`;
 
   return (
     <Provider store={store}>
@@ -101,7 +101,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta property="og:url" content={CANONICAL} key="og:url" />
         <meta
           property="og:image"
-          content="https://aamwala.netlify.app/og/home-1200x630.jpg"
+          content="https://gur26.netlify.app/og/home-1200x630.jpg"
           key="og:image"
         />
         <meta property="og:image:width" content="1200" key="og:image:width" />
@@ -126,7 +126,7 @@ export default function App({ Component, pageProps }: AppProps) {
         />
         <meta
           name="twitter:image"
-          content="https://aamwala.netlify.app/og/home-1200x630.jpg"
+          content="https://gur26.netlify.app/og/home-1200x630.jpg"
           key="twitter:image"
         />
       </Head>

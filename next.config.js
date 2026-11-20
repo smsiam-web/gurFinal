@@ -10,10 +10,10 @@ const nextConfig = {
   // },
 
   env: {
-    APP_TITLE: "Jannat Fashion",
+    APP_TITLE: "Rajshahir Aam Wala",
     INVOICE_PREFIX: "JF0",
     SEARCH_PREFIX: "JF010",
-    SENDER_HOTLINE: "09647-323700",
+    SENDER_HOTLINE: "01313-147532",
     SENDER_ADDRESS: "Nawhata, Paba, Rajshahi.",
 
     APP_TITLE_02: "Rajshahir Aam Wala",
