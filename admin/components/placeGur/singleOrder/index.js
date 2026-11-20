@@ -68,6 +68,18 @@ const OrderDetails = ({ onClick, item }) => {
                     #{singleOrder?.fulfillment?.courier}
                   </span>
                 </div>
+                <div className="flex gap-1">
+                  <span className="text-sm sm:text-lg md:text-xl  text-title">
+                    CN:{" "}
+                  </span>
+                  
+                  <span
+                   
+                    className={`text-black font-bold text-sm sm:text-lg md:text-xl  font-mono`}
+                  >
+                    #{singleOrder?.fulfillment?.consignment_id}
+                  </span>
+                </div>
               </div>
               <div className="flex flex-col justify-center items-start">
                 <div className="-pb-3]">

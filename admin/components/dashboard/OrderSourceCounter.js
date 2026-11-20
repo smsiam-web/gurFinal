@@ -582,7 +582,7 @@ export default function OrderSourceCounter() {
       )}
 
       {/* STAFF WISE ORDER COUNTER */}
-      <div className="mt-6 overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-blue-50 shadow-sm">
+      <div className="mt-6 overflow-visible rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-blue-50 shadow-sm">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3  px-5 py-4">
           <div className="flex items-center gap-3">
@@ -757,7 +757,7 @@ export default function OrderSourceCounter() {
 
                     {/* SOURCE-WISE TOOLTIP */}
 
-                    <div className="pointer-events-none invisible absolute right-0 bottom-full mb-2 z-[9999] w-[310px] max-w-[90vw] rounded-xl border border-indigo-100 bg-white p-3 opacity-0 shadow-2xl transition-all duration-200 group-hover/staff:visible group-hover/staff:opacity-100">
+                    <div className="pointer-events-none invisible absolute right-0 bottom-full mb-2 z-[99999999] w-[310px] max-w-[90vw] rounded-xl border border-indigo-100 bg-white p-3 opacity-0 shadow-2xl transition-all duration-200 group-hover/staff:visible group-hover/staff:opacity-100">
                       {/* TOOLTIP HEADER */}
 
                       <div className="mb-3 flex items-center justify-between border-b border-gray-100 pb-3">

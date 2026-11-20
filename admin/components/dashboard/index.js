@@ -131,7 +131,7 @@ const DashBoard = () => {
   // ==========================================
 
   return (
-    <main className="h-full w-full min-w-0 max-w-full overflow-x-hidden ">
+    <main className="h-full overflow-y-auto">
       {/* <button
         type="button"
         onClick={handleRebuild}
@@ -139,26 +139,13 @@ const DashBoard = () => {
       >
         Rebuild Today's Order Summary
       </button> */}
-      <div className="mx-auto grid w-full min-w-0 max-w-full">
-        {/* DASHBOARD TITLE */}
-
+      <div>
         <h1 className="mb-3 text-lg font-bold text-gray-700">
           Dashboard Overview
         </h1>
-
-        {/* PRICE OVERVIEW */}
-
         <div className="w-full">
           <PriceOverview counter={counter} />
         </div>
-
-        {/* ORDER OVERVIEW */}
-
-        {/* <div className="w-full">
-          <OrderOverview />
-        </div> */}
-
-        {/* ORDER SOURCE COUNTER */}
 
         {user?.staff_role === "HR" && (
           <div className="mt-4 w-full">
@@ -178,12 +165,6 @@ const DashBoard = () => {
             />
           </div>
         )}
-
-        {/* {user?.staff_role === "HR" && (
-          <div className="mt-4 w-full">
-            <StaffOrderCounter />
-          </div>
-        )} */}
       </div>
     </main>
   );

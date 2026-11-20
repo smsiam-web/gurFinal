@@ -18,6 +18,7 @@ import {
 } from "@/lib/validationSchema";
 import { ERROR_MEANINGS } from "@/admin/configs";
 import { updateOrderSummary } from "@/lib/orderSummary";
+import { updateCounters } from "@/lib/counters";
 
 // Normalize values → IMPORTANT: grand = items - discount + shipping (schema)
 const normalizeOrder = (values) => {
@@ -248,7 +249,6 @@ const AddOrder = ({ onClick }) => {
 
         try {
           await db.collection("ordersGur").doc(orderID).set(orderData);
-
           // Update all order summaries
           try {
             await updateOrderSummary(orderData);
@@ -265,7 +265,7 @@ const AddOrder = ({ onClick }) => {
           });
           console.error("Error placing order:", error);
         } finally {
-          await sendConfirmationMsg(normalized, orderID);
+          // await sendConfirmationMsg(normalized, orderID);
           router.push("/place-gur/id=" + orderID);
           setLoading(false);
           createCustomer(values, orderID);
