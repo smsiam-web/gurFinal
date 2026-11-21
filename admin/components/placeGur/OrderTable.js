@@ -383,6 +383,12 @@ const OrderTable = () => {
 
   const retryCourier = async (item) => {
     const orderID = item.orderID || item.id;
+        const list = item?.items
+      .map(
+        (item, index) =>
+          `${index + 1}. ${item.title} (Qty: ${item.quantity}, Price: ${item.line_total})`,
+      )
+      .join("\n");
 
     try {
       const orderPayload = {
@@ -396,7 +402,7 @@ const OrderTable = () => {
         special_instruction: `${item?.notes || ""}`,
         item_quantity: 1,
         item_weight: `${item?.totals?.qtySum || 1}`,
-        item_description: `${item?.notes || ""}`,
+        item_description: list,
         amount_to_collect: `${item?.totals?.cod || 0}`,
       };
 

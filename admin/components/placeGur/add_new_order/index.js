@@ -124,120 +124,120 @@ const AddOrder = ({ onClick }) => {
 
         let fulfillmentPatch = { courier: normalized?.fulfillment?.courier };
 
-        try {
-          switch (courierSel) {
-            case "steadfast": {
-              const sfPayload = {
-                cod_amount: `${normalized?.totals?.cod || 0}`,
-                invoice: `${orderID}`,
-                note: `${normalized?.notes || ""}`,
-                recipient_name: `${normalized?.customer?.name || ""}`,
-                recipient_phone: `${normalized?.customer?.phone || ""}`,
-                recipient_address: `${
-                  normalized?.shipping_address?.street || ""
-                }`,
-              };
+        // try {
+        //   switch (courierSel) {
+        //     case "steadfast": {
+        //       const sfPayload = {
+        //         cod_amount: `${normalized?.totals?.cod || 0}`,
+        //         invoice: `${orderID}`,
+        //         note: `${normalized?.notes || ""}`,
+        //         recipient_name: `${normalized?.customer?.name || ""}`,
+        //         recipient_phone: `${normalized?.customer?.phone || ""}`,
+        //         recipient_address: `${
+        //           normalized?.shipping_address?.street || ""
+        //         }`,
+        //       };
 
-              const resp = await fetch("/api/steadfast/create-order", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(sfPayload),
-              });
-              const result = await resp.json();
+        //       const resp = await fetch("/api/steadfast/create-order", {
+        //         method: "POST",
+        //         headers: { "Content-Type": "application/json" },
+        //         body: JSON.stringify(sfPayload),
+        //       });
+        //       const result = await resp.json();
 
-              if (!resp.ok || result?.type !== "success") {
-                throw new Error(result?.message || "Steadfast order failed");
-              }
+        //       if (!resp.ok || result?.type !== "success") {
+        //         throw new Error(result?.message || "Steadfast order failed");
+        //       }
 
-              const cons = result?.data?.consignment || {};
-              fulfillmentPatch = {
-                courier: "SteadFast",
-                consignment_id: cons?.consignment_id ?? null,
-                tracking_code: cons?.tracking_code ?? null,
-                steadfast_raw: result?.data,
-              };
+        //       const cons = result?.data?.consignment || {};
+        //       fulfillmentPatch = {
+        //         courier: "SteadFast",
+        //         consignment_id: cons?.consignment_id ?? null,
+        //         tracking_code: cons?.tracking_code ?? null,
+        //         steadfast_raw: result?.data,
+        //       };
 
-              notifications.show({
-                title: "Success (Steadfast)",
-                message: `Order sent to Steadfast${
-                  fulfillmentPatch.consignment_id
-                    ? ` · CN: ${fulfillmentPatch.consignment_id}`
-                    : ""
-                }`,
-                color: "blue",
-                autoClose: 6000,
-              });
-              break;
-            }
+        //       notifications.show({
+        //         title: "Success (Steadfast)",
+        //         message: `Order sent to Steadfast${
+        //           fulfillmentPatch.consignment_id
+        //             ? ` · CN: ${fulfillmentPatch.consignment_id}`
+        //             : ""
+        //         }`,
+        //         color: "blue",
+        //         autoClose: 6000,
+        //       });
+        //       break;
+        //     }
 
-            case "pathao": {
-              const orderPayload = {
-                store_id: 344188,
-                merchant_order_id: `${orderID}`,
-                recipient_name: `${normalized?.customer?.name || ""}`,
-                recipient_phone: `${normalized?.customer?.phone || ""}`,
-                recipient_address: `${
-                  normalized?.shipping_address?.street || ""
-                }`,
-                delivery_type: 48,
-                item_type: 2,
-                special_instruction: `${normalized?.notes || ""}`,
-                item_quantity: 1,
-                item_weight: `${normalized?.totals?.qtySum || 0}`,
-                item_description: list,
-                amount_to_collect: `${normalized?.totals?.cod || 0}`,
-              };
+        //     case "pathao": {
+        //       const orderPayload = {
+        //         store_id: 344188,
+        //         merchant_order_id: `${orderID}`,
+        //         recipient_name: `${normalized?.customer?.name || ""}`,
+        //         recipient_phone: `${normalized?.customer?.phone || ""}`,
+        //         recipient_address: `${
+        //           normalized?.shipping_address?.street || ""
+        //         }`,
+        //         delivery_type: 48,
+        //         item_type: 2,
+        //         special_instruction: `${normalized?.notes || ""}`,
+        //         item_quantity: 1,
+        //         item_weight: `${normalized?.totals?.qtySum || 0}`,
+        //         item_description: list,
+        //         amount_to_collect: `${normalized?.totals?.cod || 0}`,
+        //       };
 
-              const resp = await fetch("/api/pathaoAamWala/place-order", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(orderPayload),
-              });
-              const result = await resp.json();
+        //       const resp = await fetch("/api/pathaoAamWala/place-order", {
+        //         method: "POST",
+        //         headers: { "Content-Type": "application/json" },
+        //         body: JSON.stringify(orderPayload),
+        //       });
+        //       const result = await resp.json();
 
-              if (!resp.ok || result?.type === "error") {
-                throw new Error(result?.message || "Pathao order failed");
-              }
+        //       if (!resp.ok || result?.type === "error") {
+        //         throw new Error(result?.message || "Pathao order failed");
+        //       }
 
-              fulfillmentPatch = {
-                courier: "Pathao",
-                consignment_id:
-                  result?.data?.consignment_id ??
-                  result?.data?.data?.consignment_id ??
-                  null,
-                tracking_code:
-                  result?.data?.tracking_code ??
-                  result?.data?.data?.tracking_code ??
-                  null,
-                pathao_raw: result?.data,
-              };
+        //       fulfillmentPatch = {
+        //         courier: "Pathao",
+        //         consignment_id:
+        //           result?.data?.consignment_id ??
+        //           result?.data?.data?.consignment_id ??
+        //           null,
+        //         tracking_code:
+        //           result?.data?.tracking_code ??
+        //           result?.data?.data?.tracking_code ??
+        //           null,
+        //         pathao_raw: result?.data,
+        //       };
 
-              notifications.show({
-                title: "Success (Pathao)",
-                message: `Order sent to Pathao${
-                  fulfillmentPatch.consignment_id
-                    ? ` · CN: ${fulfillmentPatch.consignment_id}`
-                    : ""
-                }`,
-                color: "blue",
-                autoClose: 6000,
-              });
-              break;
-            }
+        //       notifications.show({
+        //         title: "Success (Pathao)",
+        //         message: `Order sent to Pathao${
+        //           fulfillmentPatch.consignment_id
+        //             ? ` · CN: ${fulfillmentPatch.consignment_id}`
+        //             : ""
+        //         }`,
+        //         color: "blue",
+        //         autoClose: 6000,
+        //       });
+        //       break;
+        //     }
 
-            default: {
-              fulfillmentPatch = { courier: normalized?.fulfillment?.courier };
-            }
-          }
-        } catch (err) {
-          console.error("Courier create failed:", err);
-          notifications.show({
-            title: "Courier create failed",
-            message: err?.message || "Please try again later.",
-            color: "orange",
-            autoClose: 6000,
-          });
-        }
+        //     default: {
+        //       fulfillmentPatch = { courier: normalized?.fulfillment?.courier };
+        //     }
+        //   }
+        // } catch (err) {
+        //   console.error("Courier create failed:", err);
+        //   notifications.show({
+        //     title: "Courier create failed",
+        //     message: err?.message || "Please try again later.",
+        //     color: "orange",
+        //     autoClose: 6000,
+        //   });
+        // }
 
         const orderData = {
           ...normalized,
@@ -249,7 +249,14 @@ const AddOrder = ({ onClick }) => {
 
         try {
           await db.collection("ordersGur").doc(orderID).set(orderData);
+          notifications.show({
+            title: "Success",
+            message: "Order created.",
+            color: "green",
+            autoClose: 5000,
+          });
           // Update all order summaries
+          router.push("/place-gur/id=" + orderID);
           try {
             await updateOrderSummary(orderData);
             await updateCounters(orderData);
@@ -266,7 +273,7 @@ const AddOrder = ({ onClick }) => {
           console.error("Error placing order:", error);
         } finally {
           // await sendConfirmationMsg(normalized, orderID);
-          router.push("/place-gur/id=" + orderID);
+          // router.push("/place-gur/id=" + orderID);
           setLoading(false);
           createCustomer(values, orderID);
         }

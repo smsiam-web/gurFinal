@@ -23,6 +23,8 @@ const OrderDropDownload = () => {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
 
+  console.log(bulkOrder)
+
   useEffect(() => {
     const fetchOrders = async () => {
       setOrders(allOrders); // Directly set the orders

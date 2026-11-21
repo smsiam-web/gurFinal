@@ -133,9 +133,9 @@ const SearchGurOrder = ({ onClick }) => {
             (norm(o?.items[0]?.product_id) === norm("1111") &&
               o?.items.length === 1 &&
               o?.items[0].quantity > 1) ||
-          norm(o?.items[0]?.product_id) === norm("50004") &&
-            o?.items.length === 1 &&
-            o?.items[0].quantity > 1,
+            (norm(o?.items[0]?.product_id) === norm("50004") &&
+              o?.items.length === 1 &&
+              o?.items[0].quantity > 1),
         );
       } else if (comboFilter === "2001") {
         list = list.filter((o) =>
@@ -295,6 +295,12 @@ const SearchGurOrder = ({ onClick }) => {
 
   const retryCourier = async (item) => {
     const orderID = item.orderID;
+    const list = item?.items
+      .map(
+        (item, index) =>
+          `${index + 1}. ${item.title} (Qty: ${item.quantity}, Price: ${item.line_total})`,
+      )
+      .join("\n");
     try {
       //Pathao
       const orderPayload = {
@@ -308,7 +314,7 @@ const SearchGurOrder = ({ onClick }) => {
         special_instruction: `${item?.notes || ""}`,
         item_quantity: 1,
         item_weight: `${item?.totals?.qtySum || 1}`,
-        item_description: `${item?.notes || ""}`,
+        item_description: list,
         amount_to_collect: `${item?.totals?.cod || 0}`,
       };
 
@@ -375,7 +381,7 @@ const SearchGurOrder = ({ onClick }) => {
     filter(value);
   };
   const limitExtend = async () => {
-    setLimit(range)
+    setLimit(range);
   };
 
   return (
@@ -737,7 +743,7 @@ const SearchGurOrder = ({ onClick }) => {
                 <span className="font-bold">{bulkOrder.length}</span>
               </h1>
 
-           { ["Admin", "HR"].includes(user?.staff_role) &&
+              {["Admin", "HR"].includes(user?.staff_role) && (
                 <div className="flex justify-center gap-3">
                   <input
                     className="inline-block px-3 py-1 text-sm focus:outline-neutral-200 leading-5 rounded-md text-center border-blue-600 h-14 bg-gray-100 border-transparent focus:bg-white"
@@ -752,8 +758,8 @@ const SearchGurOrder = ({ onClick }) => {
                     className="bg-blue-400 hover:bg-blue-500 hover:shadow-lg transition-all duration-300 text-white inline-block h-14"
                     icon=<IoSearchSharp size={24} />
                   />
-                </div>}
-            
+                </div>
+              )}
             </>
           )}
         </div>

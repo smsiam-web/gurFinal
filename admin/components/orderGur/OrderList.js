@@ -144,6 +144,7 @@ const AllOrder = () => {
   const [orders, setOrders] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [cloading, setCloading] = useState(false);
 
   const [filterOrder, setFilterOrder] = useState(null);
   const [opened, setOpened] = useState(false);
@@ -350,7 +351,14 @@ const AllOrder = () => {
   // --------------------------------------------------
 
   const retryCourier = async (item) => {
+    setCloading(true);
     const orderID = item.orderID || item.id;
+    const list = item?.items
+      .map(
+        (item, index) =>
+          `${index + 1}. ${item.title} (Qty: ${item.quantity}, Price: ${item.line_total})`,
+      )
+      .join("\n");
 
     try {
       const orderPayload = {
@@ -364,7 +372,7 @@ const AllOrder = () => {
         special_instruction: `${item?.notes || ""}`,
         item_quantity: 1,
         item_weight: `${item?.totals?.qtySum || 1}`,
-        item_description: `${item?.notes || ""}`,
+        item_description: list,
         amount_to_collect: `${item?.totals?.cod || 0}`,
       };
 
@@ -427,6 +435,7 @@ const AllOrder = () => {
         autoClose: 6000,
       });
     }
+    setCloading(false)
   };
 
   // --------------------------------------------------
@@ -707,6 +716,7 @@ const AllOrder = () => {
                         ) : (
                           <button
                             type="button"
+                            disabled={cloading}
                             onClick={() => retryCourier(item)}
                             className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-600 hover:text-white"
                           >
