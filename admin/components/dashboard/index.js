@@ -63,70 +63,6 @@ const DashBoard = () => {
   }, []);
 
   // ==========================================
-  // LAST 7 DAYS SALES AMOUNT REPORT
-  // ==========================================
-
-  useEffect(() => {
-    const unsubscribe = db
-      .collection("counters")
-      .doc("last7DaysAmountReport")
-      .onSnapshot(
-        (snapshot) => {
-          const data = snapshot.exists ? snapshot.data() : {};
-
-          const dataArr = [
-            data?.sevenAmount || 0,
-            data?.sixAmount || 0,
-            data?.fiveAmount || 0,
-            data?.fourAmount || 0,
-            data?.threeAmount || 0,
-            data?.twoAmount || 0,
-            data?.oneAmount || 0,
-          ];
-
-          setLast7DaysAmountReport(dataArr);
-        },
-        (error) => {
-          console.error("Amount Report Error:", error);
-        },
-      );
-
-    return () => unsubscribe();
-  }, []);
-
-  // ==========================================
-  // LAST 7 DAYS ORDER REPORT
-  // ==========================================
-
-  useEffect(() => {
-    const unsubscribe = db
-      .collection("counters")
-      .doc("last7DaysOrderReport")
-      .onSnapshot(
-        (snapshot) => {
-          const data = snapshot.exists ? snapshot.data() : {};
-
-          const dataArr = [
-            data?.sevenOrder || 0,
-            data?.sixOrder || 0,
-            data?.fiveOrder || 0,
-            data?.fourOrder || 0,
-            data?.threeOrder || 0,
-            data?.twoOrder || 0,
-            data?.oneOrder || 0,
-          ];
-
-          setLast7DaysOrderReport(dataArr);
-        },
-        (error) => {
-          console.error("Order Report Error:", error);
-        },
-      );
-
-    return () => unsubscribe();
-  }, []);
-
-  // ==========================================
   // DASHBOARD UI
   // ==========================================
 
@@ -155,14 +91,6 @@ const DashBoard = () => {
         {user?.staff_role === "HR" && (
           <div className="my-5 w-full">
             <Last7DaysOrderChart />
-          </div>
-        )}
-        {user?.staff_role === "HR" && (
-          <div className="my-4 grid gap-4">
-            <LineChart
-              amount={last7DaysAmountReport}
-              order={last7DaysOrderReport}
-            />
           </div>
         )}
       </div>

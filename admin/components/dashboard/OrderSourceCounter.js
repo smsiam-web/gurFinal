@@ -23,6 +23,16 @@ const getToday = () =>
     day: "2-digit",
   }).format(new Date());
 
+const getYesterday = () => {
+  const [year, month, day] = getToday().split("-").map(Number);
+  const yesterday = new Date(Date.UTC(year, month - 1, day - 1));
+  return [
+    yesterday.getUTCFullYear(),
+    String(yesterday.getUTCMonth() + 1).padStart(2, "0"),
+    String(yesterday.getUTCDate()).padStart(2, "0"),
+  ].join("-");
+};
+
 const formatNumber = (value, digits = 1) =>
   Number(value || 0).toLocaleString("en-BD", {
     maximumFractionDigits: digits,
@@ -30,7 +40,7 @@ const formatNumber = (value, digits = 1) =>
 
 export default function OrderSourceCounter() {
   const [date, setDate] = useState(getToday);
-  const [viewMode, setViewMode] = useState("daily");
+  const [viewMode, setViewMode] = useState("today");
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -118,7 +128,11 @@ export default function OrderSourceCounter() {
             <h1 className="text-xl font-extrabold tracking-wide text-black">
               {viewMode === "overall"
                 ? "All-time order performance"
-                : "Daily order performance"}
+                : viewMode === "yesterday"
+                ? "Yesterday order performance"
+                : viewMode === "calendar"
+                ? "Selected date order performance"
+                : "Today order performance"}
             </h1>
 
             <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
@@ -132,25 +146,49 @@ export default function OrderSourceCounter() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {viewMode === "daily" && (
-            <input
-              type="date"
-              value={date}
-              max={getToday()}
-              onChange={(e) => setDate(e.target.value)}
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400"
-            />
-          )}
+          <input
+            type="date"
+            value={date}
+            max={getToday()}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              setDate(e.target.value);
+              setViewMode("calendar");
+            }}
+            aria-label="Choose report date"
+            className={`rounded-lg border px-3 py-2 text-sm outline-none transition focus:border-blue-400 ${
+              viewMode === "calendar"
+                ? "border-blue-500 bg-blue-50 text-blue-700"
+                : "border-gray-200 bg-white text-gray-600"
+            }`}
+          />
 
           <button
-            onClick={() => setViewMode("daily")}
+            onClick={() => {
+              setDate(getToday());
+              setViewMode("today");
+            }}
             className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-              viewMode === "daily"
+              viewMode === "today"
                 ? "bg-blue-600 text-white shadow"
                 : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
             }`}
           >
-            DAILY
+            Today
+          </button>
+
+          <button
+            onClick={() => {
+              setDate(getYesterday());
+              setViewMode("yesterday");
+            }}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              viewMode === "yesterday"
+                ? "bg-orange-500 text-white shadow"
+                : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Yesterday
           </button>
 
           <button
@@ -255,9 +293,9 @@ export default function OrderSourceCounter() {
               </p>
             </div>
 
-            <div className="rounded-xl bg-purple-100 p-3">
+            <div className="rounded-xl bg-purple-100 p-4">
               <svg
-                className="h-7 w-7 text-purple-600"
+                className="h-8 w-8 text-purple-600"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -618,7 +656,13 @@ export default function OrderSourceCounter() {
           </div>
 
           <span className="rounded-lg border border-indigo-100 bg-white px-3 py-2 text-xs font-semibold text-indigo-700">
-            {viewMode === "overall" ? "ALL TIME" : date}
+            {viewMode === "overall"
+              ? "ALL TIME"
+              : viewMode === "today"
+              ? `TODAY · ${date}`
+              : viewMode === "yesterday"
+              ? `YESTERDAY · ${date}`
+              : `SELECTED DATE · ${date}`}
           </span>
         </div>
 
@@ -887,7 +931,11 @@ export default function OrderSourceCounter() {
         <span>
           {viewMode === "overall"
             ? "Overall Lifetime Summary"
-            : `Daily Report: ${date}`}
+            : viewMode === "today"
+            ? `Today Report: ${date}`
+            : viewMode === "yesterday"
+            ? `Yesterday Report: ${date}`
+            : `Selected Date Report: ${date}`}
         </span>
       </div>
     </section>

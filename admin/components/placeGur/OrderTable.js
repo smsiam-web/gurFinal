@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Tooltip, Modal, Pagination } from "@mantine/core";
 import Link from "next/link";
@@ -34,15 +33,9 @@ import { FaPrint } from "react-icons/fa";
 import { RiDeleteBinLine } from "react-icons/ri";
 import { IoIosSend } from "react-icons/io";
 
-import {
-  MdOutlineLocalShipping,
-  MdOutlineShoppingBag,
-} from "react-icons/md";
+import { MdOutlineLocalShipping, MdOutlineShoppingBag } from "react-icons/md";
 
-import {
-  TbRefresh,
-  TbTruckDelivery,
-} from "react-icons/tb";
+import { TbRefresh, TbTruckDelivery } from "react-icons/tb";
 
 import { BsThreeDots } from "react-icons/bs";
 
@@ -93,11 +86,13 @@ const STATUS_CONFIG = {
 const getStatus = (status) => {
   const key = String(status || "pending").toLowerCase();
 
-  return STATUS_CONFIG[key] || {
-    label: status || "Unknown",
-    color: "bg-gray-100 text-gray-600 border-gray-200",
-    dot: "bg-gray-400",
-  };
+  return (
+    STATUS_CONFIG[key] || {
+      label: status || "Unknown",
+      color: "bg-gray-100 text-gray-600 border-gray-200",
+      dot: "bg-gray-400",
+    }
+  );
 };
 
 const formatMoney = (value) =>
@@ -126,12 +121,7 @@ const StatusBadge = ({ status }) => {
 // ACTION BUTTON
 // --------------------------------------------------
 
-const ActionButton = ({
-  title,
-  onClick,
-  children,
-  color = "gray",
-}) => {
+const ActionButton = ({ title, onClick, children, color = "gray" }) => {
   const colors = {
     blue: "bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white",
     green: "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white",
@@ -203,12 +193,7 @@ const OrderTable = () => {
 
   const updateStatus = async (item, newStatus) => {
     try {
-      const success = await updateOrderStatusGur(
-        db,
-        item.id,
-        item,
-        newStatus
-      );
+      const success = await updateOrderStatusGur(db, item.id, item, newStatus);
 
       if (success) {
         notifications.show({
@@ -300,10 +285,7 @@ const OrderTable = () => {
     setOpened(false);
 
     try {
-      await db
-        .collection("ordersGur")
-        .doc(item.id)
-        .delete();
+      await db.collection("ordersGur").doc(item.id).delete();
 
       notifications.show({
         title: "Delete Successfully",
@@ -353,7 +335,7 @@ const OrderTable = () => {
             message: error.message,
             color: "red",
           });
-        }
+        },
       );
 
     return () => unSub();
@@ -371,7 +353,7 @@ const OrderTable = () => {
       },
       (error) => {
         console.error("Config loading error:", error);
-      }
+      },
     );
 
     return () => unSub();
@@ -383,7 +365,7 @@ const OrderTable = () => {
 
   const retryCourier = async (item) => {
     const orderID = item.orderID || item.id;
-        const list = item?.items
+    const list = item?.items
       .map(
         (item, index) =>
           `${index + 1}. ${item.title} (Qty: ${item.quantity}, Price: ${item.line_total})`,
@@ -406,23 +388,18 @@ const OrderTable = () => {
         amount_to_collect: `${item?.totals?.cod || 0}`,
       };
 
-      const resp = await fetch(
-        "/api/pathaoAamWala/place-order",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(orderPayload),
-        }
-      );
+      const resp = await fetch("/api/pathaoAamWala/place-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderPayload),
+      });
 
       const result = await resp.json();
 
       if (!resp.ok || result?.type === "error") {
-        throw new Error(
-          result?.message || "Pathao order failed"
-        );
+        throw new Error(result?.message || "Pathao order failed");
       }
 
       const fulfillmentPatch = {
@@ -447,10 +424,7 @@ const OrderTable = () => {
         },
       };
 
-      await db
-        .collection("ordersGur")
-        .doc(orderID)
-        .update(normalized);
+      await db.collection("ordersGur").doc(orderID).update(normalized);
 
       notifications.show({
         title: "Pathao Success",
@@ -481,10 +455,7 @@ const OrderTable = () => {
   const pageSize = 15;
   const totalPages = Math.ceil(orders.length / pageSize);
 
-  const paginatedOrders = orders.slice(
-    (page - 1) * pageSize,
-    page * pageSize
-  );
+  const paginatedOrders = orders.slice((page - 1) * pageSize, page * pageSize);
 
   // --------------------------------------------------
   // COUNTERS
@@ -493,19 +464,19 @@ const OrderTable = () => {
   const totalOrders = orders.length;
 
   const pendingOrders = orders.filter(
-    (item) => item.status?.toLowerCase() === "pending"
+    (item) => item.status?.toLowerCase() === "pending",
   ).length;
 
   const processingOrders = orders.filter(
-    (item) => item.status?.toLowerCase() === "processing"
+    (item) => item.status?.toLowerCase() === "processing",
   ).length;
 
   const shippedOrders = orders.filter(
-    (item) => item.status?.toLowerCase() === "shipped"
+    (item) => item.status?.toLowerCase() === "shipped",
   ).length;
 
   const deliveredOrders = orders.filter(
-    (item) => item.status?.toLowerCase() === "delivered"
+    (item) => item.status?.toLowerCase() === "delivered",
   ).length;
 
   // --------------------------------------------------
@@ -551,11 +522,9 @@ const OrderTable = () => {
 
   return (
     <main className="w-full min-w-0 max-w-full space-y-6 overflow-x-hidden">
-
       {/* PAGE HEADER */}
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
-
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-100">
             <MdOutlineShoppingBag size={25} />
@@ -576,13 +545,11 @@ const OrderTable = () => {
           <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
           Live Order Updates
         </span>
-
       </div>
 
       {/* SUMMARY CARDS */}
 
       <div className="grid w-full min-w-0 grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-
         {summaryCards.map((card) => {
           const colors = {
             blue: {
@@ -620,7 +587,6 @@ const OrderTable = () => {
               className={`group min-w-0 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${theme.border}`}
             >
               <div className="flex items-center justify-between gap-2">
-
                 <div className="min-w-0">
                   <p className="truncate text-xs font-semibold text-gray-500">
                     {card.title}
@@ -631,27 +597,24 @@ const OrderTable = () => {
                   </h3>
                 </div>
 
-                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 ${theme.icon}`}>
+                <div
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 ${theme.icon}`}
+                >
                   <card.icon size={21} />
                 </div>
-
               </div>
             </div>
           );
         })}
-
       </div>
 
       {/* TABLE CARD */}
 
       <section className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-
         {/* TABLE HEADER */}
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-gradient-to-r from-white via-blue-50/50 to-indigo-50/50 px-4 py-4 sm:px-5">
-
           <div className="flex items-center gap-3">
-
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
               <MdOutlineShoppingBag size={21} />
             </div>
@@ -665,7 +628,6 @@ const OrderTable = () => {
                 Latest 30 orders from your store
               </p>
             </div>
-
           </div>
 
           <div className="flex items-center gap-2 rounded-xl border border-blue-100 bg-white px-3 py-2">
@@ -675,13 +637,11 @@ const OrderTable = () => {
               {totalOrders} Orders
             </span>
           </div>
-
         </div>
 
         {/* TABLE BODY */}
 
         {loading ? (
-
           <div className="flex flex-col items-center justify-center py-20">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600" />
 
@@ -689,15 +649,11 @@ const OrderTable = () => {
               Loading orders...
             </p>
           </div>
-
         ) : !orders.length ? (
-
           <div className="p-8">
             <NotFound text="order" />
           </div>
-
         ) : (
-
           /* IMPORTANT: SCROLL CONTAINER */
 
           <div
@@ -707,64 +663,66 @@ const OrderTable = () => {
               scrollbarWidth: "thin",
             }}
           >
-
             <table className="w-full min-w-[1550px] border-collapse text-left">
-
               {/* TABLE HEAD */}
 
               <thead className="sticky top-0 z-10 bg-gray-50">
-
                 <tr className="border-b border-gray-100 text-[11px] font-bold uppercase tracking-wider text-gray-500">
-
                   <th className="whitespace-nowrap px-4 py-4">Order ID</th>
                   <th className="whitespace-nowrap px-4 py-4">Courier</th>
                   <th className="whitespace-nowrap px-4 py-4">Consignment</th>
                   <th className="whitespace-nowrap px-4 py-4">Customer</th>
                   <th className="whitespace-nowrap px-4 py-4">Phone</th>
-                  <th className="whitespace-nowrap px-4 py-4 text-right">Discount</th>
-                  <th className="whitespace-nowrap px-4 py-4 text-right">Paid</th>
-                  <th className="whitespace-nowrap px-4 py-4 text-right">COD</th>
+                  <th className="whitespace-nowrap px-4 py-4 text-right">
+                    Discount
+                  </th>
+                  <th className="whitespace-nowrap px-4 py-4 text-right">
+                    Paid
+                  </th>
+                  <th className="whitespace-nowrap px-4 py-4 text-right">
+                    COD
+                  </th>
                   <th className="whitespace-nowrap px-4 py-4">Status</th>
 
                   {canChangeStatus && (
-                    <th className="whitespace-nowrap px-4 py-4">Update Status</th>
+                    <th className="whitespace-nowrap px-4 py-4">
+                      Update Status
+                    </th>
                   )}
 
                   <th className="whitespace-nowrap px-4 py-4">Source</th>
                   <th className="whitespace-nowrap px-4 py-4">Category</th>
                   <th className="whitespace-nowrap px-4 py-4">Created At</th>
                   <th className="whitespace-nowrap px-4 py-4">Created By</th>
-                  <th className="whitespace-nowrap px-4 py-4 text-center">Invoice</th>
-                  <th className="whitespace-nowrap px-4 py-4 text-center">Actions</th>
-
+                  <th className="whitespace-nowrap px-4 py-4 text-center">
+                    Invoice
+                  </th>
+                  <th className="whitespace-nowrap px-4 py-4 text-center">
+                    Actions
+                  </th>
                 </tr>
               </thead>
 
               {/* TABLE ROWS */}
 
               <tbody className="divide-y divide-gray-100">
-
                 {paginatedOrders.map((item) => {
-
                   const isDelivered =
                     item.status?.toLowerCase() === "delivered";
 
-                  const isUrgent =
-                    item.customer_details?.markAs === "Argent";
+                  const isUrgent = item.customer_details?.markAs === "Argent";
 
                   return (
-
                     <tr
                       key={item.id}
                       className={`transition-colors duration-200 hover:bg-blue-50/70 ${
                         item.isFilter
                           ? "bg-sky-50"
                           : isDelivered || isUrgent
-                          ? "bg-green-50/40"
-                          : "bg-white"
+                            ? "bg-green-50/40"
+                            : "bg-white"
                       }`}
                     >
-
                       {/* ORDER ID */}
 
                       <td className="whitespace-nowrap px-4 py-4">
@@ -779,7 +737,10 @@ const OrderTable = () => {
 
                       <td className="whitespace-nowrap px-4 py-4">
                         <span className="inline-flex items-center gap-2 text-xs font-semibold text-gray-700">
-                          <MdOutlineLocalShipping className="text-blue-500" size={17} />
+                          <MdOutlineLocalShipping
+                            className="text-blue-500"
+                            size={17}
+                          />
                           {item?.fulfillment?.courier || "Not Assigned"}
                         </span>
                       </td>
@@ -787,11 +748,9 @@ const OrderTable = () => {
                       {/* CONSIGNMENT */}
 
                       <td className="whitespace-nowrap px-4 py-4">
-
                         {(item?.fulfillment?.courier === "Pathao" &&
                           item?.fulfillment?.consignment_id) ||
                         item?.fulfillment?.courier !== "Pathao" ? (
-
                           <Link
                             href={
                               item?.fulfillment?.courier === "Pathao"
@@ -805,9 +764,7 @@ const OrderTable = () => {
                               {item?.fulfillment?.consignment_id || "—"}
                             </span>
                           </Link>
-
                         ) : (
-
                           <button
                             type="button"
                             onClick={() => retryCourier(item)}
@@ -816,23 +773,18 @@ const OrderTable = () => {
                             <IoIosSend size={15} />
                             Resend
                           </button>
-
                         )}
-
                       </td>
 
                       {/* CUSTOMER */}
 
                       <td className="px-4 py-4">
-
                         <div className="flex items-center gap-2.5">
-
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                             <FiUser size={16} />
                           </div>
 
                           <div className="min-w-0">
-
                             <p className="max-w-[170px] truncate text-xs font-bold text-gray-800">
                               {item.customer?.name || "Unknown Customer"}
                             </p>
@@ -843,11 +795,8 @@ const OrderTable = () => {
                                 {item.shipping_address.city}
                               </p>
                             )}
-
                           </div>
-
                         </div>
-
                       </td>
 
                       {/* PHONE */}
@@ -895,15 +844,12 @@ const OrderTable = () => {
                       {/* STATUS UPDATE */}
 
                       {canChangeStatus && (
-
                         <td className="whitespace-nowrap px-4 py-4">
-
                           <select
                             value={item.status || "pending"}
                             onChange={(e) => onStatusChanged(e, item.id)}
                             className="h-9 w-32 cursor-pointer rounded-xl border border-gray-200 bg-white px-2 text-xs font-medium text-gray-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                           >
-
                             <option value="pending">Pending</option>
 
                             {role !== "Sales Manager" && (
@@ -925,11 +871,8 @@ const OrderTable = () => {
                             )}
 
                             <option value="cancelled">Cancelled</option>
-
                           </select>
-
                         </td>
-
                       )}
 
                       {/* SOURCE */}
@@ -963,60 +906,46 @@ const OrderTable = () => {
 
                       <td className="whitespace-nowrap px-4 py-4">
                         <span className="inline-flex items-center gap-2 text-xs font-semibold text-gray-600">
-
                           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-600">
                             <FiUser size={13} />
                           </span>
 
                           {item?.created_user || "Admin"}
-
                         </span>
                       </td>
 
                       {/* INVOICE */}
 
                       <td className="px-4 py-4 text-center">
-
                         <Link href={`/place-gur/id=${item.id}`}>
-
                           <Tooltip label="View Invoice" withArrow>
                             <span className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition hover:bg-blue-600 hover:text-white">
                               <HiOutlineDocumentDownload size={18} />
                             </span>
                           </Tooltip>
-
                         </Link>
-
                       </td>
 
                       {/* ACTIONS */}
 
                       <td className="px-4 py-4">
-
                         <div className="flex items-center justify-center gap-2">
-
                           {(item.status === "Pending" &&
                             role === "Sales Executive") ||
                           isSalesManager ? (
-
                             <Link href={`/place-gur/edit-order/id=${item.id}`}>
                               <ActionButton title="Edit Order" color="blue">
                                 <FiEdit size={16} />
                               </ActionButton>
                             </Link>
-
                           ) : canManageOrders ? null : (
-
                             <ActionButton title="Not Available" color="gray">
                               <FiEdit size={16} />
                             </ActionButton>
-
                           )}
 
                           {canManageOrders && (
-
                             <>
-
                               {isHR && (
                                 <ActionButton
                                   title="Delete Order"
@@ -1037,7 +966,9 @@ const OrderTable = () => {
                                 </ActionButton>
                               )}
 
-                              <Link href={`/place-gur/edit-order/id=${item.id}`}>
+                              <Link
+                                href={`/place-gur/edit-order/id=${item.id}`}
+                              >
                                 <ActionButton title="Edit Order" color="blue">
                                   <FiEdit size={16} />
                                 </ActionButton>
@@ -1050,34 +981,22 @@ const OrderTable = () => {
                               >
                                 <AiOutlinePrinter size={18} />
                               </ActionButton>
-
                             </>
-
                           )}
-
                         </div>
-
                       </td>
-
                     </tr>
-
                   );
                 })}
-
               </tbody>
-
             </table>
-
           </div>
-
         )}
 
         {/* TABLE FOOTER */}
 
         {!loading && orders.length > 0 && (
-
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 bg-gray-50/70 px-4 py-4 sm:px-5">
-
             <p className="text-xs text-gray-500">
               Showing{" "}
               <strong className="text-gray-700">
@@ -1088,9 +1007,7 @@ const OrderTable = () => {
                 {Math.min(page * pageSize, totalOrders)}
               </strong>
               {" of "}
-              <strong className="text-gray-700">
-                {totalOrders}
-              </strong>
+              <strong className="text-gray-700">{totalOrders}</strong>
               {" orders"}
             </p>
 
@@ -1106,11 +1023,8 @@ const OrderTable = () => {
                 size="sm"
               />
             )}
-
           </div>
-
         )}
-
       </section>
 
       {/* DELETE CONFIRMATION MODAL */}
@@ -1127,11 +1041,8 @@ const OrderTable = () => {
           blur: 3,
         }}
       >
-
         <div className="overflow-hidden rounded-2xl">
-
           <div className="flex flex-col items-center px-5 py-7 text-center">
-
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-500">
               <RiDeleteBinLine size={30} />
             </div>
@@ -1141,14 +1052,12 @@ const OrderTable = () => {
             </h2>
 
             <p className="mt-2 text-sm text-gray-500">
-              Are you sure you want to delete this order?
-              This action cannot be undone.
+              Are you sure you want to delete this order? This action cannot be
+              undone.
             </p>
 
             {filterOrder && (
-
               <div className="mt-5 w-full rounded-2xl border border-gray-100 bg-gray-50 p-4 text-left">
-
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-medium text-gray-400">
                     Order ID
@@ -1190,13 +1099,10 @@ const OrderTable = () => {
 
                   <StatusBadge status={filterOrder.status} />
                 </div>
-
               </div>
-
             )}
 
             <div className="mt-6 grid w-full grid-cols-2 gap-3">
-
               <button
                 type="button"
                 onClick={closeModal}
@@ -1213,15 +1119,10 @@ const OrderTable = () => {
               >
                 Yes, Delete
               </button>
-
             </div>
-
           </div>
-
         </div>
-
       </Modal>
-
     </main>
   );
 };

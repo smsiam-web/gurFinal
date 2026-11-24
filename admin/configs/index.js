@@ -21,6 +21,18 @@ export const menus = [
     title: "Dashboard",
     secure: false,
   },
+    {
+    pathname: "/search-order",
+    Icon: AiOutlineAppstoreAdd,
+    title: "Search Order",
+    secure: true,
+  },
+    {
+    pathname: "/place-gur/add-new",
+    Icon: AiOutlineAppstoreAdd,
+    title: "Place Gur",
+    secure: true,
+  },
 
   {
     pathname: "/web-order",
@@ -28,18 +40,8 @@ export const menus = [
     title: "Web Order List",
     secure: true,
   },
-  {
-    pathname: "/place-gur/add-new",
-    Icon: AiOutlineAppstoreAdd,
-    title: "Place Order",
-    secure: true,
-  },
-  {
-    pathname: "/place-gur",
-    Icon: AiOutlineAppstoreAdd,
-    title: "Place Gur",
-    secure: true,
-  },
+
+
   {
     pathname: "/place-aam",
     Icon: AiOutlineAppstoreAdd,

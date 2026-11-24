@@ -135,6 +135,8 @@ const ActionButton = ({ title, onClick, children, color = "gray" }) => {
 // MAIN COMPONENT
 // --------------------------------------------------
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const AllOrder = () => {
   const dispatch = useDispatch();
 
@@ -143,8 +145,23 @@ const AllOrder = () => {
 
   const [orders, setOrders] = useState([]);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
   const [loading, setLoading] = useState(true);
   const [cloading, setCloading] = useState(false);
+  const [bulkStatusLoading, setBulkStatusLoading] = useState(false);
+
+  // Bulk Pathao state
+  const [selectedOrderIds, setSelectedOrderIds] = useState([]);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({
+    completed: 0,
+    total: 0,
+    batch: 0,
+    countdown: 0,
+    currentOrderId: "",
+  });
+  const [bulkResults, setBulkResults] = useState({});
 
   const [filterOrder, setFilterOrder] = useState(null);
   const [opened, setOpened] = useState(false);
@@ -184,20 +201,26 @@ const AllOrder = () => {
   // UPDATE STATUS
   // --------------------------------------------------
 
-  const updateStatus = async (item, newStatus) => {
+  const updateStatus = async (item, newStatus, options = {}) => {
+    const { silent = false } = options;
+
     try {
       const success = await updateOrderStatusGur(db, item.id, item, newStatus);
 
       if (success) {
-        notifications.show({
-          title: "Status Updated Successfully",
-          message: `Order #${item.orderID || item.id} status changed to ${newStatus}.`,
-          color: "blue",
-          autoClose: 4000,
-        });
-
+        if (!silent) {
+          notifications.show({
+            title: "Status Updated Successfully",
+            message: `Order #${item.orderID || item.id} status changed to ${newStatus}.`,
+            color: "blue",
+            autoClose: 4000,
+          });
+        }
         setOpened(false);
-      } else {
+        return true;
+      }
+
+      if (!silent) {
         notifications.show({
           title: "Status Update Failed",
           message: "An error occurred while updating the status.",
@@ -205,25 +228,57 @@ const AllOrder = () => {
           autoClose: 5000,
         });
       }
+      return false;
     } catch (error) {
       console.error("Status update error:", error);
-
-      notifications.show({
-        title: "Status Update Failed",
-        message: error.message || "Please try again.",
-        color: "red",
-      });
+      if (!silent) {
+        notifications.show({
+          title: "Status Update Failed",
+          message: error.message || "Please try again.",
+          color: "red",
+        });
+      }
+      return false;
     }
   };
 
+  // With an id: update one row. Without an id: update selected rows only.
   const onStatusChanged = async (e, id) => {
-    e.preventDefault();
-
     const newStatus = e.target.value;
-    const selectedOrder = orders.find((item) => item.id === id);
+    if (!newStatus) return;
 
-    if (selectedOrder) {
-      await updateStatus(selectedOrder, newStatus);
+    if (id) {
+      const selectedOrder = orders.find((item) => item.id === id);
+      if (selectedOrder) await updateStatus(selectedOrder, newStatus);
+      return;
+    }
+
+    const selectedOrdersForStatus = orders.filter((item) =>
+      selectedOrderIds.includes(item.id)
+    );
+
+    if (!selectedOrdersForStatus.length) return;
+
+    setBulkStatusLoading(true);
+    let successCount = 0;
+    let failedCount = 0;
+
+    try {
+      // Sequential writes keep the bulk operation controlled and reportable.
+      for (const selectedOrder of selectedOrdersForStatus) {
+        const success = await updateStatus(selectedOrder, newStatus, { silent: true });
+        if (success) successCount += 1;
+        else failedCount += 1;
+      }
+
+      notifications.show({
+        title: "Bulk Status Update Completed",
+        message: `${successCount} order(s) updated to ${newStatus}${failedCount ? ` · ${failedCount} failed` : ""}.`,
+        color: failedCount ? "orange" : "green",
+        autoClose: 6000,
+      });
+    } finally {
+      setBulkStatusLoading(false);
     }
   };
 
@@ -301,7 +356,7 @@ const AllOrder = () => {
     const unSub = db
       .collection("ordersGur")
       .orderBy("created_at", "desc")
-      .limit(30)
+      .limit(500)
       .onSnapshot(
         (snap) => {
           const orderData = snap.docs.map((doc) => ({
@@ -391,6 +446,8 @@ const AllOrder = () => {
       }
 
       const fulfillmentPatch = {
+        ...item.fulfillment,
+        status: "fulfilled",
         courier: "Pathao",
 
         consignment_id:
@@ -406,14 +463,9 @@ const AllOrder = () => {
         pathao_raw: result?.data,
       };
 
-      const normalized = {
-        ...item,
-        fulfillment: {
-          ...fulfillmentPatch,
-        },
-      };
-
-      await db.collection("ordersGur").doc(item.id).update(normalized);
+      await db.collection("ordersGur").doc(item.id).update({
+        fulfillment: fulfillmentPatch,
+      });
 
       notifications.show({
         title: "Pathao Success",
@@ -439,14 +491,369 @@ const AllOrder = () => {
   };
 
   // --------------------------------------------------
+  // BULK PATHAO COURIER
+  // --------------------------------------------------
+
+  const selectedOrders = orders.filter((item) =>
+    selectedOrderIds.includes(item.id)
+  );
+
+  const eligibleBulkOrders = selectedOrders.filter(
+    (item) =>
+      String(item?.fulfillment?.status || "").toLowerCase() === "unfulfilled" &&
+      bulkResults[item.id]?.status !== "success"
+  );
+
+  // Result priority in the courier modal:
+  // 1) Failed / error orders at the very top
+  // 2) Sending, waiting and successful orders (success stays visible for 3s)
+  // 3) Completed successes below active orders
+  // 4) Skipped / already fulfilled orders at the very bottom
+  const sortedBulkOrders = [...selectedOrders].sort((a, b) => {
+    const getPriority = (item) => {
+      const result = bulkResults[item.id];
+      const resultStatus = result?.status;
+      const fulfillmentStatus = String(
+        item?.fulfillment?.status || ""
+      ).toLowerCase();
+
+      if (resultStatus === "error") return 0;
+      if (resultStatus === "sending") return 1;
+      if (resultStatus === "success" && !result?.moveToBottom) return 1;
+      if (resultStatus === "success" && result?.moveToBottom) return 2;
+      if (resultStatus === "skipped") return 3;
+
+      // Orders already fulfilled before this bulk attempt are treated as skipped.
+      if (fulfillmentStatus !== "unfulfilled") return 3;
+      // Eligible orders not yet processed remain above the completed/skipped group.
+      return 1;
+    };
+
+    return getPriority(a) - getPriority(b);
+  });
+
+  const bulkSuccessCount = Object.values(bulkResults).filter(
+    (result) => result?.status === "success"
+  ).length;
+  const bulkFailedCount = Object.values(bulkResults).filter(
+    (result) => result?.status === "error"
+  ).length;
+  const bulkSkippedCount = selectedOrders.filter((item) => {
+    const resultStatus = bulkResults[item.id]?.status;
+    const fulfillmentStatus = String(
+      item?.fulfillment?.status || ""
+    ).toLowerCase();
+
+    return (
+      resultStatus === "skipped" ||
+      (fulfillmentStatus !== "unfulfilled" &&
+        resultStatus !== "success" &&
+        resultStatus !== "error")
+    );
+  }).length;
+
+  const toggleOrderSelection = (orderId) => {
+    setSelectedOrderIds((current) =>
+      current.includes(orderId)
+        ? current.filter((id) => id !== orderId)
+        : [...current, orderId]
+    );
+  };
+
+  const toggleAllOrdersSelection = () => {
+    // Select/deselect only the rows visible on the current page.
+    // Selections from other pages remain selected.
+    const currentPageIds = paginatedOrders.map((item) => item.id);
+    const allCurrentPageSelected =
+      currentPageIds.length > 0 &&
+      currentPageIds.every((id) => selectedOrderIds.includes(id));
+
+    setSelectedOrderIds((current) =>
+      allCurrentPageSelected
+        ? current.filter((id) => !currentPageIds.includes(id))
+        : [...new Set([...current, ...currentPageIds])]
+    );
+  };
+
+  const openBulkCourierModal = () => {
+    if (!selectedOrderIds.length) {
+      notifications.show({
+        title: "No orders selected",
+        message: "Please select at least one order.",
+        color: "orange",
+      });
+      return;
+    }
+
+    setBulkResults({});
+    setBulkProgress({
+      completed: 0,
+      total: eligibleBulkOrders.length,
+      batch: 0,
+      countdown: 0,
+      currentOrderId: "",
+    });
+    setBulkModalOpen(true);
+  };
+
+  const sendOneOrderToPathao = async (item) => {
+    const orderID = item.orderID || item.id;
+    const itemDescription = (item?.items || [])
+      .map(
+        (product, index) =>
+          `${index + 1}. ${product.title} (Qty: ${product.quantity}, Price: ${product.line_total})`
+      )
+      .join("\\n");
+
+    const orderPayload = {
+      store_id: 344188,
+      merchant_order_id: String(orderID),
+      recipient_name: String(item?.customer?.name || ""),
+      recipient_phone: String(item?.customer?.phone || ""),
+      recipient_address: String(item?.shipping_address?.street || ""),
+      delivery_type: 48,
+      item_type: 2,
+      special_instruction: String(item?.notes || ""),
+      item_quantity: 1,
+      item_weight: String(item?.totals?.qtySum || 1),
+      item_description: itemDescription,
+      amount_to_collect: String(item?.totals?.cod || 0),
+    };
+
+    const resp = await fetch("/api/pathaoAamWala/place-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orderPayload),
+    });
+
+    let result;
+    try {
+      result = await resp.json();
+    } catch {
+      throw new Error("Pathao returned an invalid response.");
+    }
+
+    if (!resp.ok || result?.type === "error") {
+      throw new Error(result?.message || "Pathao order failed.");
+    }
+
+    const responseData = result?.data || {};
+    const nestedData = responseData?.data || {};
+    const fulfillmentPatch = {
+      ...item.fulfillment,
+      status: "fulfilled",
+      courier: "Pathao",
+      consignment_id:
+        responseData?.consignment_id ??
+        nestedData?.consignment_id ??
+        null,
+      tracking_code:
+        responseData?.tracking_code ??
+        nestedData?.tracking_code ??
+        null,
+      pathao_raw: responseData,
+    };
+
+    // Update only fulfillment; preserve all other order fields.
+    await db.collection("ordersGur").doc(item.id).update({
+      fulfillment: fulfillmentPatch,
+    });
+
+    return fulfillmentPatch;
+  };
+
+  const startBulkPathao = async () => {
+    // Re-check status at start so stale table data cannot send an ineligible order.
+    const currentSelected = orders.filter((item) =>
+      selectedOrderIds.includes(item.id)
+    );
+    const eligible = currentSelected.filter(
+      (item) =>
+        String(item?.fulfillment?.status || "").toLowerCase() === "unfulfilled" &&
+        bulkResults[item.id]?.status !== "success"
+    );
+
+    if (!eligible.length) {
+      notifications.show({
+        title: "No eligible orders",
+        message: "Only orders with fulfillment status 'unfulfilled' can be sent.",
+        color: "orange",
+      });
+      return;
+    }
+
+    setBulkLoading(true);
+    setBulkResults({});
+    setBulkProgress({
+      completed: 0,
+      total: eligible.length,
+      batch: 1,
+      countdown: 0,
+      currentOrderId: "",
+    });
+
+    let completed = 0;
+
+    try {
+      for (let index = 0; index < eligible.length; index += 20) {
+        const batch = eligible.slice(index, index + 20);
+        const batchNumber = Math.floor(index / 20) + 1;
+
+        setBulkProgress((prev) => ({
+          ...prev,
+          batch: batchNumber,
+          countdown: 0,
+        }));
+
+        for (const item of batch) {
+          const orderID = item.orderID || item.id;
+
+          setBulkProgress((prev) => ({
+            ...prev,
+            currentOrderId: String(orderID),
+          }));
+
+          try {
+            // Show an immediate per-order loading state while this order is
+            // being checked and submitted to Pathao.
+            setBulkResults((prev) => ({
+              ...prev,
+              [item.id]: {
+                status: "sending",
+                consignmentId: "",
+                message: "Sending to Pathao...",
+              },
+            }));
+
+            // Check the latest fulfillment status before sending.
+            const latestSnap = await db
+              .collection("ordersGur")
+              .doc(item.id)
+              .get();
+
+            if (!latestSnap.exists) {
+              throw new Error("Order no longer exists in Firestore.");
+            }
+
+            const latestOrder = {
+              id: latestSnap.id,
+              ...latestSnap.data(),
+            };
+
+            if (
+              String(latestOrder?.fulfillment?.status || "").toLowerCase() !==
+              "unfulfilled"
+            ) {
+              throw new Error("Skipped: order is no longer unfulfilled.");
+            }
+
+            const fulfillment = await sendOneOrderToPathao(latestOrder);
+
+            const consignmentId =
+              fulfillment?.consignment_id ||
+              fulfillment?.pathao_raw?.consignment_id ||
+              fulfillment?.pathao_raw?.data?.consignment_id ||
+              "";
+
+            // First stop the spinner and show the courier ID + Success result.
+            // Keep the row in the active/top section momentarily so the result
+            // is visible, then move it to the fulfilled section below.
+            setBulkResults((prev) => ({
+              ...prev,
+              [item.id]: {
+                status: "success",
+                moveToBottom: false,
+                consignmentId,
+                message: "Successfully submitted to Pathao",
+              },
+            }));
+
+            // Keep Consignment ID + Success visible before reordering the row.
+            await sleep(300);
+
+            setBulkResults((prev) => ({
+              ...prev,
+              [item.id]: {
+                ...prev[item.id],
+                status: "success",
+                moveToBottom: true,
+              },
+            }));
+          } catch (error) {
+            const errorMessage = error?.message || "Courier submission failed";
+            const wasSkipped = errorMessage.toLowerCase().startsWith("skipped:");
+
+            setBulkResults((prev) => ({
+              ...prev,
+              [item.id]: {
+                status: wasSkipped ? "skipped" : "error",
+                consignmentId: "",
+                message: errorMessage,
+              },
+            }));
+          }
+
+          completed += 1;
+          setBulkProgress((prev) => ({
+            ...prev,
+            completed,
+          }));
+        }
+
+        // Wait 30 seconds after each full batch, only if another batch remains.
+        if (index + 20 < eligible.length) {
+          for (let seconds = 30; seconds > 0; seconds -= 1) {
+            setBulkProgress((prev) => ({ ...prev, countdown: seconds }));
+            await sleep(1000);
+          }
+        }
+      }
+
+      notifications.show({
+        title: "Bulk Pathao process completed",
+        message: `${eligible.length} eligible order(s) processed. Check each order's result below.`,
+        color: "green",
+        autoClose: 7000,
+      });
+    } finally {
+      setBulkLoading(false);
+      setBulkProgress((prev) => ({
+        ...prev,
+        countdown: 0,
+        currentOrderId: "",
+      }));
+    }
+  };
+
+  // --------------------------------------------------
   // PAGINATION
   // --------------------------------------------------
 
-  const pageSize = 15;
+  const totalPages = Math.max(1, Math.ceil(orders.length / pageSize));
 
-  const totalPages = Math.ceil(orders.length / pageSize);
+  const paginatedOrders = orders.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
 
-  const paginatedOrders = orders.slice((page - 1) * pageSize, page * pageSize);
+  const currentPageOrderIds = paginatedOrders.map((item) => item.id);
+  const allCurrentPageSelected =
+    currentPageOrderIds.length > 0 &&
+    currentPageOrderIds.every((id) => selectedOrderIds.includes(id));
+  const someCurrentPageSelected = currentPageOrderIds.some((id) =>
+    selectedOrderIds.includes(id)
+  );
+
+  const handlePageSizeChange = (event) => {
+    const nextSize = Number(event.target.value);
+    setPageSize(nextSize);
+    setPage(1);
+  };
+
+  useEffect(() => {
+    const nextTotalPages = Math.max(1, Math.ceil(orders.length / pageSize));
+    if (page > nextTotalPages) setPage(nextTotalPages);
+  }, [orders.length, page, pageSize]);
 
   // --------------------------------------------------
   // ORDER SUMMARY
@@ -583,16 +990,53 @@ const AllOrder = () => {
             </h3>
 
             <p className="mt-1 text-xs text-gray-400">
-              Latest 30 orders from your store
+              Latest 500 orders from your store
             </p>
           </div>
 
-          <div className="flex items-center gap-2 rounded-xl border border-blue-100 bg-white px-3 py-2">
-            <FiUser className="text-blue-500" size={15} />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 rounded-xl border border-blue-100 bg-white px-3 py-2">
+              <FiUser className="text-blue-500" size={15} />
+              <span className="text-xs font-semibold text-gray-600">
+                {totalOrders} Orders
+              </span>
+            </div>
 
-            <span className="text-xs font-semibold text-gray-600">
-              {totalOrders} Orders
-            </span>
+            {selectedOrderIds.length > 0 && canChangeStatus && (
+              <label className="inline-flex items-center gap-2 rounded-xl border border-indigo-100 bg-white px-3 py-2">
+                <span className="whitespace-nowrap text-xs font-semibold text-indigo-700">
+                  Bulk status ({selectedOrderIds.length})
+                </span>
+                <select
+                  key={`bulk-status-${selectedOrderIds.length}`}
+                  defaultValue=""
+                  onChange={onStatusChanged}
+                  disabled={bulkStatusLoading}
+                  className="max-w-[155px] cursor-pointer border-0 bg-transparent text-xs font-semibold text-gray-700 outline-none focus:ring-0 disabled:opacity-50"
+                  aria-label="Change status for selected orders"
+                >
+                  <option value="" disabled>
+                    {bulkStatusLoading ? "Updating..." : "Choose status"}
+                  </option>
+                  <option value="pending">Pending</option>
+                  {role !== "Sales Manager" && <option value="processing">Processing</option>}
+                  {role !== "Sales Manager" && <option value="shipped">Shipped</option>}
+                  {role !== "Sales Manager" && <option value="delivered">Delivered</option>}
+                </select>
+              </label>
+            )}
+
+            {selectedOrderIds.length > 0 && (
+              <button
+                type="button"
+                onClick={openBulkCourierModal}
+                disabled={bulkLoading || bulkStatusLoading}
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <IoIosSend size={16} />
+                Send {selectedOrderIds.length} to Pathao
+              </button>
+            )}
           </div>
         </div>
 
@@ -617,6 +1061,21 @@ const AllOrder = () => {
 
               <thead className="sticky top-0 z-10 bg-gray-50">
                 <tr className="border-b border-gray-100 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                  <th className="px-4 py-4">
+                    <input
+                      type="checkbox"
+                      aria-label="Select all orders on current page"
+                      checked={allCurrentPageSelected}
+                      ref={(element) => {
+                        if (element) {
+                          element.indeterminate =
+                            someCurrentPageSelected && !allCurrentPageSelected;
+                        }
+                      }}
+                      onChange={toggleAllOrdersSelection}
+                      className="h-4 w-4 cursor-pointer rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                  </th>
                   <th className="px-4 py-4">Order ID</th>
 
                   <th className="px-4 py-4">Courier</th>
@@ -673,6 +1132,17 @@ const AllOrder = () => {
                             : "bg-white"
                       }`}
                     >
+                      {/* SELECT ORDER */}
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          aria-label={`Select order ${item.orderID || item.id}`}
+                          checked={selectedOrderIds.includes(item.id)}
+                          onChange={() => toggleOrderSelection(item.id)}
+                          className="h-4 w-4 cursor-pointer rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                      </td>
+
                       {/* ORDER ID */}
 
                       <td className="px-4 py-4">
@@ -947,20 +1417,42 @@ const AllOrder = () => {
         {/* TABLE FOOTER */}
 
         {!loading && orders.length > 0 && (
-          <div className="flex flex-wrap items-center justify-center gap-3 border-t border-gray-100 bg-gray-50/70 pt-3 sm:px-5">
-            <p className="text-xs text-gray-500">
-              Showing{" "}
-              <strong className="text-gray-700">
-                {(page - 1) * pageSize + 1}
-              </strong>
-              {" - "}
-              <strong className="text-gray-700">
-                {Math.min(page * pageSize, totalOrders)}
-              </strong>
-              {" of "}
-              <strong className="text-gray-700">{totalOrders}</strong>
-              {" orders"}
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 bg-gray-50/70 px-4 py-3 sm:px-5">
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                Rows per page
+                <select
+                  value={pageSize}
+                  onChange={handlePageSizeChange}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  aria-label="Rows per page"
+                >
+                  {[15, 50, 100, 200, 500].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="text-xs text-gray-500">
+                Showing{" "}
+                <strong className="text-gray-700">
+                  {totalOrders === 0 ? 0 : (page - 1) * pageSize + 1}
+                </strong>
+                {" - "}
+                <strong className="text-gray-700">
+                  {Math.min(page * pageSize, totalOrders)}
+                </strong>
+                {" of "}
+                <strong className="text-gray-700">{totalOrders}</strong>
+                {" orders"}
+              </p>
+              {selectedOrderIds.length > 0 && (
+                <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                  {selectedOrderIds.length} selected across pages
+                </span>
+              )}
+            </div>
           </div>
         )}
         {!loading && orders.length > 0 && (
@@ -980,6 +1472,236 @@ const AllOrder = () => {
           </div>
         )}
       </section>
+
+      {/* BULK PATHAO CONFIRMATION MODAL */}
+      <Modal
+        opened={bulkModalOpen}
+        onClose={() => {
+          if (!bulkLoading) setBulkModalOpen(false);
+        }}
+        centered
+        size="xl"
+        radius="xl"
+        title={
+          <div>
+            <h2 className="text-lg font-bold text-gray-800">
+              Bulk Pathao Courier Entry
+            </h2>
+            <p className="text-xs font-normal text-gray-500">
+              Review selected orders before submitting
+            </p>
+          </div>
+        }
+        closeOnClickOutside={!bulkLoading}
+        closeOnEscape={!bulkLoading}
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
+              <p className="text-xs text-blue-600">Selected</p>
+              <p className="mt-1 text-2xl font-bold text-blue-800">
+                {selectedOrders.length}
+              </p>
+            </div>
+            <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3">
+              <p className="text-xs text-indigo-600">Ready to send</p>
+              <p className="mt-1 text-2xl font-bold text-indigo-800">
+                {eligibleBulkOrders.length}
+              </p>
+            </div>
+            <div className="rounded-xl border border-green-100 bg-green-50 p-3">
+              <p className="text-xs text-green-600">Successful</p>
+              <p className="mt-1 text-2xl font-bold text-green-800">
+                {bulkSuccessCount}
+              </p>
+            </div>
+            <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
+              <p className="text-xs text-amber-600">Skipped</p>
+              <p className="mt-1 text-2xl font-bold text-amber-800">
+                {bulkSkippedCount}
+              </p>
+            </div>
+            <div className="rounded-xl border border-red-100 bg-red-50 p-3">
+              <p className="text-xs text-red-600">Failed</p>
+              <p className="mt-1 text-2xl font-bold text-red-800">
+                {bulkFailedCount}
+              </p>
+            </div>
+          </div>
+
+          <div className="max-h-[45vh] overflow-auto rounded-xl border border-gray-200">
+            <table className="w-full min-w-[650px] text-left text-xs">
+              <thead className="sticky top-0 bg-gray-50 text-gray-500">
+                <tr>
+                  <th className="px-3 py-3">Order ID</th>
+                  <th className="px-3 py-3">Customer</th>
+                  <th className="px-3 py-3">Fulfillment</th>
+                  <th className="px-3 py-3">Pathao Consignment ID</th>
+                  <th className="px-3 py-3">Result</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {sortedBulkOrders.map((item) => {
+                  const result = bulkResults[item.id];
+                  const isEligible =
+                    String(item?.fulfillment?.status || "").toLowerCase() ===
+                    "unfulfilled" && result?.status !== "success";
+                  const displayFulfillmentStatus =
+                    result?.status === "sending"
+                      ? "Sending to Pathao..."
+                      : result?.status === "success"
+                      ? "fulfilled"
+                      : item?.fulfillment?.status || "Missing";
+
+                  return (
+                    <tr key={item.id}>
+                      <td className="px-3 py-3 font-bold text-blue-700">
+                        #{item.orderID || item.id}
+                      </td>
+                      <td className="px-3 py-3 font-medium text-gray-700">
+                        {item?.customer?.name ||
+                          item?.customer_details?.customer_name ||
+                          "Unknown"}
+                      </td>
+                      <td className="px-3 py-3">
+                        {result?.status === "sending" ? (
+                          <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-semibold text-blue-700">
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
+                            Sending...
+                          </span>
+                        ) : (
+                          <span
+                            className={`rounded-full px-2 py-1 font-semibold ${
+                              isEligible
+                                ? "bg-green-50 text-green-700"
+                                : "bg-amber-50 text-amber-700"
+                            }`}
+                          >
+                            {displayFulfillmentStatus}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 font-semibold text-indigo-700">
+                        {result?.consignmentId ||
+                          item?.fulfillment?.consignment_id ||
+                          item?.fulfillment?.consignmentId ||
+                          "—"}
+                      </td>
+                      <td className="px-3 py-3">
+                        {result?.status === "success" ? (
+                          <span className="font-semibold text-green-700">
+                            Success
+                          </span>
+                        ) : result?.status === "error" ? (
+                          <span
+                            className="font-semibold text-red-600"
+                            title={result.message}
+                          >
+                            Failed: {result.message}
+                          </span>
+                        ) : result?.status === "skipped" ? (
+                          <span
+                            className="font-semibold text-amber-700"
+                            title={result.message}
+                          >
+                            Skipped: {result.message}
+                          </span>
+                        ) : result?.status === "sending" ? (
+                          <span className="inline-flex items-center gap-2 font-semibold text-blue-700">
+                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-600" />
+                            Sending to courier
+                          </span>
+                        ) : !isEligible ? (
+                          <span className="font-semibold text-amber-700">
+                            Skipped
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">Waiting</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {bulkLoading && (
+            <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-bold text-blue-800">
+                  Processing batch {bulkProgress.batch}
+                </p>
+                <p className="text-xs font-semibold text-blue-700">
+                  {bulkProgress.completed} / {bulkProgress.total} completed
+                </p>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-blue-100">
+                <div
+                  className="h-full rounded-full bg-blue-600 transition-all"
+                  style={{
+                    width: `${
+                      bulkProgress.total
+                        ? (bulkProgress.completed / bulkProgress.total) * 100
+                        : 0
+                    }%`,
+                  }}
+                />
+              </div>
+              {bulkProgress.countdown > 0 ? (
+                <p className="mt-3 text-sm font-semibold text-amber-700">
+                  Next batch starts in {bulkProgress.countdown} seconds...
+                </p>
+              ) : (
+                <p className="mt-3 text-xs text-blue-700">
+                  {bulkProgress.currentOrderId
+                    ? `Sending order #${bulkProgress.currentOrderId}...`
+                    : "Preparing next order..."}
+                </p>
+              )}
+              <p className="mt-1 text-[11px] text-blue-600">
+                20 orders per batch · 30-second pause between batches
+              </p>
+            </div>
+          )}
+
+          {!bulkLoading && bulkProgress.completed > 0 && (
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="text-sm font-bold text-gray-800">
+                Courier request summary
+              </p>
+              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold">
+                <span className="text-green-700">Successful: {bulkSuccessCount}</span>
+                <span className="text-amber-700">Skipped: {bulkSkippedCount}</span>
+                <span className="text-red-600">Failed: {bulkFailedCount}</span>
+                <span className="text-gray-600">Attempted: {bulkProgress.completed}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-4">
+            <button
+              type="button"
+              disabled={bulkLoading}
+              onClick={() => setBulkModalOpen(false)}
+              className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+            >
+              {bulkLoading ? "Processing..." : "Close"}
+            </button>
+            <button
+              type="button"
+              disabled={bulkLoading || eligibleBulkOrders.length === 0}
+              onClick={startBulkPathao}
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <IoIosSend size={17} />
+              {bulkLoading
+                ? "Sending orders..."
+                : `Confirm & Send ${eligibleBulkOrders.length} Orders`}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* DELETE CONFIRMATION MODAL */}
 

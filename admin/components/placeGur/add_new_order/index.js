@@ -432,7 +432,7 @@ const AddOrder = ({ onClick }) => {
               </div>
             </div>
             <div className="">
-              <div className="w-full py-3 px-6 md:px-4 mb-4">
+              <div className="w-full py-3  md:px-4 mb-4">
                 <OrderDetailsFormUp />
               </div>
               <div className="w-full">
