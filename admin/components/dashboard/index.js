@@ -26,22 +26,6 @@ const DashBoard = () => {
 
   const user = useSelector(selectUser);
 
-  // const handleRebuild = async () => {
-  //   try {
-  //     const result = await rebuildTodayOrderSummary();
-
-  //     console.log("Rebuild successful:", result);
-
-  //     alert(
-  //       `Success!\nOrders: ${result.totalOrders}\nWeight: ${result.totalKg} KG`
-  //     );
-
-  //   } catch (error) {
-  //     console.error("Rebuild failed:", error);
-  //     alert(error.message);
-  //   }
-  // };
-
   // ==========================================
   // ORDER AMOUNT COUNTER
   // ==========================================
@@ -68,13 +52,6 @@ const DashBoard = () => {
 
   return (
     <main className="h-full overflow-y-auto">
-      {/* <button
-        type="button"
-        onClick={handleRebuild}
-        className="rounded-lg bg-indigo-600 px-5 py-3 text-white font-semibold"
-      >
-        Rebuild Today's Order Summary
-      </button> */}
       <div>
         <h1 className="mb-3 text-lg font-bold text-gray-700">
           Dashboard Overview

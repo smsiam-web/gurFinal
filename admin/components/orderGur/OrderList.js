@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Tooltip, Modal, Pagination } from "@mantine/core";
+import { Tooltip, Modal, Pagination, Select } from "@mantine/core";
 import Link from "next/link";
 
 import { db } from "@/app/utils/firebase";
@@ -983,46 +983,112 @@ const AllOrder = () => {
       <section className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         {/* TABLE HEADER */}
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-gradient-to-r from-white via-blue-50/40 to-indigo-50/40 px-4 py-4 sm:px-5">
+           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-gradient-to-r from-white via-blue-50/40 to-indigo-50/40 px-4 py-4 sm:px-5">
           <div>
             <h3 className="text-base font-bold text-gray-800">
               All Order Records
             </h3>
 
             <p className="mt-1 text-xs text-gray-400">
-              Latest 500 orders from your store
+              Latest {totalOrders} orders from your store
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2 rounded-xl border border-blue-100 bg-white px-3 py-2">
-              <FiUser className="text-blue-500" size={15} />
-              <span className="text-xs font-semibold text-gray-600">
-                {totalOrders} Orders
+          <div className="flex w-full min-w-0 flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            {/* Total order counter */}
+            <div className="inline-flex min-h-[46px] w-full items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-white px-3.5 py-2.5 shadow-sm sm:w-auto sm:justify-start">
+              <span className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                  <MdOutlineShoppingBag size={17} />
+                </span>
+                <span className="text-xs font-semibold text-slate-600">
+                  Total Orders
+                </span>
+              </span>
+              <span className="rounded-lg bg-blue-50 px-2.5 py-1 text-sm font-extrabold tabular-nums text-blue-700">
+                {totalOrders}
               </span>
             </div>
 
             {selectedOrderIds.length > 0 && canChangeStatus && (
-              <label className="inline-flex items-center gap-2 rounded-xl border border-indigo-100 bg-white px-3 py-2">
-                <span className="whitespace-nowrap text-xs font-semibold text-indigo-700">
-                  Bulk status ({selectedOrderIds.length})
+              <label className="flex min-h-[46px] w-full min-w-0 items-center gap-3 rounded-2xl border border-indigo-100 bg-white px-3.5 py-2 shadow-sm transition-colors focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-50 sm:w-auto sm:min-w-[245px]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                  <FiEdit size={16} />
                 </span>
-                <select
-                  key={`bulk-status-${selectedOrderIds.length}`}
-                  defaultValue=""
-                  onChange={onStatusChanged}
-                  disabled={bulkStatusLoading}
-                  className="max-w-[155px] cursor-pointer border-0 bg-transparent text-xs font-semibold text-gray-700 outline-none focus:ring-0 disabled:opacity-50"
-                  aria-label="Change status for selected orders"
-                >
-                  <option value="" disabled>
-                    {bulkStatusLoading ? "Updating..." : "Choose status"}
-                  </option>
-                  <option value="pending">Pending</option>
-                  {role !== "Sales Manager" && <option value="processing">Processing</option>}
-                  {role !== "Sales Manager" && <option value="shipped">Shipped</option>}
-                  {role !== "Sales Manager" && <option value="delivered">Delivered</option>}
-                </select>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-indigo-500">
+                    Bulk Status
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-800">
+                      {selectedOrderIds.length} selected
+                    </span>
+                    <span className="h-1 w-1 rounded-full bg-slate-300" />
+                    <Select
+                      key={`bulk-status-${selectedOrderIds.length}`}
+                      placeholder={bulkStatusLoading ? "Updating..." : "Choose status"}
+                      defaultValue={null}
+                      onChange={(value) => {
+                        if (value) onStatusChanged({ target: { value } });
+                      }}
+                      disabled={bulkStatusLoading}
+                      data={[
+                        { value: "pending", label: "Pending" },
+                        ...(role !== "Sales Manager"
+                          ? [
+                              { value: "processing", label: "Processing" },
+                              { value: "shipped", label: "Shipped" },
+                              { value: "delivered", label: "Delivered" },
+                            ]
+                          : []),
+                      ]}
+                      allowDeselect={false}
+                      searchable={false}
+                      checkIconPosition="right"
+                      comboboxProps={{
+                        withinPortal: true,
+                        position: "bottom-start",
+                        shadow: "md",
+                        offset: 8,
+                      }}
+                      aria-label="Change status for selected orders"
+                      className="min-w-0 flex-1"
+                      styles={{
+                        input: {
+                          minHeight: 32,
+                          height: 32,
+                          paddingLeft: 11,
+                          paddingRight: 30,
+                          border: "1px solid #e0e7ff",
+                          borderRadius: 10,
+                          backgroundColor: "#f8faff",
+                          color: "#334155",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          transition: "all 160ms ease",
+                        },
+                        dropdown: {
+                          padding: 6,
+                          border: "1px solid #e0e7ff",
+                          borderRadius: 14,
+                          backgroundColor: "#ffffff",
+                          boxShadow: "0 14px 35px rgba(30, 41, 59, 0.14)",
+                        },
+                        option: {
+                          minHeight: 36,
+                          borderRadius: 9,
+                          padding: "8px 10px",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#334155",
+                        },
+                      }}
+                    />
+                  </span>
+                </span>
+                {bulkStatusLoading && (
+                  <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600" />
+                )}
               </label>
             )}
 
@@ -1031,10 +1097,19 @@ const AllOrder = () => {
                 type="button"
                 onClick={openBulkCourierModal}
                 disabled={bulkLoading || bulkStatusLoading}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="group inline-flex min-h-[46px] w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-600 px-4 py-2.5 text-xs font-bold text-white shadow-[0_5px_14px_rgba(5,150,105,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-700 hover:to-green-700 hover:shadow-[0_8px_18px_rgba(5,150,105,0.24)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 sm:w-auto"
               >
-                <IoIosSend size={16} />
-                Send {selectedOrderIds.length} to Pathao
+                {bulkLoading ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                ) : (
+                  <IoIosSend size={17} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+                )}
+                <span>
+                  {bulkLoading ? "Preparing orders..." : "Send to Pathao"}
+                </span>
+                <span className="rounded-lg bg-white/20 px-2 py-1 text-[11px] font-extrabold tabular-nums">
+                  {selectedOrderIds.length}
+                </span>
               </button>
             )}
           </div>
