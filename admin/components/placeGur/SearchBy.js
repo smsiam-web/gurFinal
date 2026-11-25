@@ -21,14 +21,13 @@ import { notifications } from "@mantine/notifications";
 import { selectUser } from "@/app/redux/slices/authSlice";
 import Link from "next/link";
 import { HiOutlineDocumentDownload } from "react-icons/hi";
-import { FiEdit } from "react-icons/fi";
+import { FiEdit, FiPrinter } from "react-icons/fi";
 import { selectOrder, updateOrder } from "@/app/redux/slices/orderSlice";
 import { IoCall } from "react-icons/io5";
 import BarcodeComponent from "@/admin/utils/BarcodeImage";
 import { IoIosSend } from "react-icons/io";
 import { IoSearchSharp } from "react-icons/io5";
 import generateBulkPrintStickers from "../orderGur/generateBulkSticker";
-
 
 // Keep the same status options used in the order-entry form.
 const ORDER_STATUS = [
@@ -43,14 +42,29 @@ const ORDER_STATUS = [
   { name: "Partially Refunded", id: "partially_refunded" },
 ];
 
-
 // Convert Bengali/Arabic numerals and normalize Bangladesh mobile numbers.
 const normalizeBangladeshPhone = (value = "") => {
   const digitMap = {
-    "০": "0", "১": "1", "২": "2", "৩": "3", "৪": "4",
-    "৫": "5", "৬": "6", "৭": "7", "৮": "8", "৯": "9",
-    "٠": "0", "١": "1", "٢": "2", "٣": "3", "٤": "4",
-    "٥": "5", "٦": "6", "٧": "7", "٨": "8", "٩": "9",
+    "০": "0",
+    "১": "1",
+    "২": "2",
+    "৩": "3",
+    "৪": "4",
+    "৫": "5",
+    "৬": "6",
+    "৭": "7",
+    "৮": "8",
+    "৯": "9",
+    "٠": "0",
+    "١": "1",
+    "٢": "2",
+    "٣": "3",
+    "٤": "4",
+    "٥": "5",
+    "٦": "6",
+    "٧": "7",
+    "٨": "8",
+    "٩": "9",
   };
 
   let digits = String(value)
@@ -59,7 +73,8 @@ const normalizeBangladeshPhone = (value = "") => {
 
   if (digits.startsWith("00880")) digits = digits.slice(5);
   else if (digits.startsWith("880")) digits = digits.slice(3);
-  else if (digits.startsWith("0") && digits.length === 12) digits = digits.slice(1);
+  else if (digits.startsWith("0") && digits.length === 12)
+    digits = digits.slice(1);
 
   return digits;
 };
@@ -69,17 +84,23 @@ const formatOrderDate = (value) => {
   const date = value?.toDate ? value.toDate() : new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(date);
 };
 
 const getOrderStatusClass = (status = "") => {
   const key = String(status).toLowerCase();
-  if (["delivered", "fulfilled", "paid"].includes(key)) return "bg-emerald-50 text-emerald-700 ring-emerald-200";
-  if (["cancelled", "returned", "refunded"].includes(key)) return "bg-rose-50 text-rose-700 ring-rose-200";
+  if (["delivered", "fulfilled", "paid"].includes(key))
+    return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+  if (["cancelled", "returned", "refunded"].includes(key))
+    return "bg-rose-50 text-rose-700 ring-rose-200";
   if (["shipped"].includes(key)) return "bg-sky-50 text-sky-700 ring-sky-200";
-  if (["processing"].includes(key)) return "bg-indigo-50 text-indigo-700 ring-indigo-200";
+  if (["processing"].includes(key))
+    return "bg-indigo-50 text-indigo-700 ring-indigo-200";
   return "bg-amber-50 text-amber-700 ring-amber-200";
 };
 
@@ -123,7 +144,9 @@ const SearchBy = ({ onClick }) => {
       // Invoice / Order ID search: use the exact order document first,
       // then fall back to the orderID field in case document ID differs.
       if (customerSearchMode === "invoice") {
-        const invoiceId = String(customerPhoneInput || "").trim().toUpperCase();
+        const invoiceId = String(customerPhoneInput || "")
+          .trim()
+          .toUpperCase();
 
         if (!invoiceId) {
           setCustomerSearchError("অর্ডার / ইনভয়েস নম্বর লিখুন।");
@@ -133,7 +156,8 @@ const SearchBy = ({ onClick }) => {
         let orderSnap = await db.collection("ordersGur").doc(invoiceId).get();
 
         if (!orderSnap.exists) {
-          const invoiceQuery = await db.collection("ordersGur")
+          const invoiceQuery = await db
+            .collection("ordersGur")
             .where("orderID", "==", invoiceId)
             .limit(1)
             .get();
@@ -154,7 +178,11 @@ const SearchBy = ({ onClick }) => {
           orderID: orderData.orderID || orderSnap.id,
           created_at: orderData.created_at || orderData.createdAt || null,
           items: Array.isArray(orderData.items) ? orderData.items : [],
-          status: orderData.status ?? orderData.orderStatus ?? orderData.order_status ?? "unknown",
+          status:
+            orderData.status ??
+            orderData.orderStatus ??
+            orderData.order_status ??
+            "unknown",
         };
 
         const customer = orderData.customer || {};
@@ -168,7 +196,9 @@ const SearchBy = ({ onClick }) => {
             shipping.city,
             shipping.state,
             shipping.country,
-          ].filter(Boolean).join(", "),
+          ]
+            .filter(Boolean)
+            .join(", "),
         });
         setCustomerOrders([orderRow]);
         setCustomerSearchDone(true);
@@ -180,7 +210,9 @@ const SearchBy = ({ onClick }) => {
       setCustomerPhoneInput(phone);
 
       if (!/^01\d{9}$/.test(phone)) {
-        setCustomerSearchError("সঠিক বাংলাদেশি ১১ ডিজিটের মোবাইল নম্বর দিন (01XXXXXXXXX)।");
+        setCustomerSearchError(
+          "সঠিক বাংলাদেশি ১১ ডিজিটের মোবাইল নম্বর দিন (01XXXXXXXXX)।",
+        );
         return;
       }
 
@@ -189,7 +221,10 @@ const SearchBy = ({ onClick }) => {
 
       if (!customerSnap.exists) {
         let fallbackCustomer = null;
-        const createCustomerDoc = await db.collection("createCustomer").doc(phone).get();
+        const createCustomerDoc = await db
+          .collection("createCustomer")
+          .doc(phone)
+          .get();
 
         if (createCustomerDoc.exists) {
           const data = createCustomerDoc.data() || {};
@@ -199,7 +234,8 @@ const SearchBy = ({ onClick }) => {
             address: data.cus_address || "",
           };
         } else {
-          const customerQuery = await db.collection("createCustomer")
+          const customerQuery = await db
+            .collection("createCustomer")
             .where("cus_contact", "==", phone)
             .limit(1)
             .get();
@@ -224,7 +260,9 @@ const SearchBy = ({ onClick }) => {
       }
 
       const customerData = customerSnap.data() || {};
-      const orderIds = Array.isArray(customerData.items) ? customerData.items : [];
+      const orderIds = Array.isArray(customerData.items)
+        ? customerData.items
+        : [];
 
       setCustomerRecord({
         name: customerData?.customer?.name || "",
@@ -233,7 +271,9 @@ const SearchBy = ({ onClick }) => {
           customerData?.shipping_address?.street,
           customerData?.shipping_address?.city,
           customerData?.shipping_address?.state,
-        ].filter(Boolean).join(", "),
+        ]
+          .filter(Boolean)
+          .join(", "),
         status: customerData.status || "",
         createdAt: customerData.created_at || null,
       });
@@ -241,7 +281,10 @@ const SearchBy = ({ onClick }) => {
       const orderResults = await Promise.all(
         orderIds.map(async (orderId) => {
           try {
-            const orderSnap = await db.collection("ordersGur").doc(String(orderId)).get();
+            const orderSnap = await db
+              .collection("ordersGur")
+              .doc(String(orderId))
+              .get();
             if (!orderSnap.exists) {
               return {
                 id: String(orderId),
@@ -260,7 +303,11 @@ const SearchBy = ({ onClick }) => {
               orderID: orderData.orderID || orderSnap.id,
               created_at: orderData.created_at || orderData.createdAt || null,
               items: Array.isArray(orderData.items) ? orderData.items : [],
-              status: orderData.status ?? orderData.orderStatus ?? orderData.order_status ?? "unknown",
+              status:
+                orderData.status ??
+                orderData.orderStatus ??
+                orderData.order_status ??
+                "unknown",
             };
           } catch (error) {
             console.error("Failed to load customer order:", orderId, error);
@@ -273,7 +320,7 @@ const SearchBy = ({ onClick }) => {
               missing: true,
             };
           }
-        })
+        }),
       );
 
       orderResults.sort((a, b) => {
@@ -293,7 +340,7 @@ const SearchBy = ({ onClick }) => {
       setCustomerSearchError(
         customerSearchMode === "invoice"
           ? "ইনভয়েস / অর্ডার সার্চ করা যায়নি। আবার চেষ্টা করুন।"
-          : "কাস্টমারের অর্ডার হিস্ট্রি লোড করা যায়নি। আবার চেষ্টা করুন।"
+          : "কাস্টমারের অর্ডার হিস্ট্রি লোড করা যায়নি। আবার চেষ্টা করুন।",
       );
     } finally {
       setCustomerSearchLoading(false);
@@ -375,15 +422,25 @@ const SearchBy = ({ onClick }) => {
     }
 
     try {
-      const success = await updateOrderStatusGur(db, order.id, order, newStatus);
+      const success = await updateOrderStatusGur(
+        db,
+        order.id,
+        order,
+        newStatus,
+      );
       if (success) {
         if (keepHistoryOpen) {
           setCustomerOrders((prev) =>
             prev.map((item) =>
               String(item.id) === String(order.id)
-                ? { ...item, status: newStatus, orderStatus: newStatus, order_status: newStatus }
-                : item
-            )
+                ? {
+                    ...item,
+                    status: newStatus,
+                    orderStatus: newStatus,
+                    order_status: newStatus,
+                  }
+                : item,
+            ),
           );
         }
 
@@ -413,7 +470,8 @@ const SearchBy = ({ onClick }) => {
       console.error("Order status update failed:", error);
       notifications.show({
         title: "Status Update Failed",
-        message: error?.message || "An error occurred while updating the status.",
+        message:
+          error?.message || "An error occurred while updating the status.",
         color: "red",
         autoClose: 4000,
       });
@@ -421,7 +479,9 @@ const SearchBy = ({ onClick }) => {
       return false;
     } finally {
       if (keepHistoryOpen) {
-        setUpdatingCustomerOrderIds((prev) => prev.filter((id) => id !== String(order.id)));
+        setUpdatingCustomerOrderIds((prev) =>
+          prev.filter((id) => id !== String(order.id)),
+        );
       }
     }
   };
@@ -532,9 +592,15 @@ const SearchBy = ({ onClick }) => {
       setCustomerOrders((prev) =>
         prev.map((order) =>
           String(order.id) === String(item.id)
-            ? { ...order, fulfillment: { ...(order.fulfillment || {}), ...fulfillmentPatch } }
-            : order
-        )
+            ? {
+                ...order,
+                fulfillment: {
+                  ...(order.fulfillment || {}),
+                  ...fulfillmentPatch,
+                },
+              }
+            : order,
+        ),
       );
 
       notifications.show({
@@ -551,7 +617,9 @@ const SearchBy = ({ onClick }) => {
         autoClose: 6000,
       });
     } finally {
-      setCourierSendingIds((prev) => prev.filter((id) => id !== String(item.id)));
+      setCourierSendingIds((prev) =>
+        prev.filter((id) => id !== String(item.id)),
+      );
     }
   };
 
@@ -811,8 +879,12 @@ const SearchBy = ({ onClick }) => {
       <section className="mb-5 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 bg-gradient-to-r from-blue-50 via-white to-indigo-50 px-4 py-4 sm:px-5">
           <div className="flex flex-col gap-1">
-            <h3 className="text-base font-bold text-slate-800">Order & Customer Search</h3>
-            <p className="text-xs text-slate-500">ফোন নম্বর অথবা ইনভয়েস / অর্ডার আইডি দিয়ে খুঁজুন</p>
+            <h3 className="text-base font-bold text-slate-800">
+              Order & Customer Search
+            </h3>
+            <p className="text-xs text-slate-500">
+              ফোন নম্বর অথবা ইনভয়েস / অর্ডার আইডি দিয়ে খুঁজুন
+            </p>
           </div>
           <div className="mt-4 inline-flex w-full rounded-xl border border-slate-200 bg-slate-100 p-1 sm:w-auto">
             <button
@@ -831,7 +903,9 @@ const SearchBy = ({ onClick }) => {
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              <span className="inline-flex items-center gap-2"><IoCall size={15} /> Phone Number</span>
+              <span className="inline-flex items-center gap-2">
+                <IoCall size={15} /> Phone Number
+              </span>
             </button>
             <button
               type="button"
@@ -849,35 +923,48 @@ const SearchBy = ({ onClick }) => {
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              <span className="inline-flex items-center gap-2"><HiOutlineDocumentDownload size={15} /> Invoice / Order ID</span>
+              <span className="inline-flex items-center gap-2">
+                <HiOutlineDocumentDownload size={15} /> Invoice / Order ID
+              </span>
             </button>
           </div>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <div className="relative min-w-0 flex-1">
               {customerSearchMode === "phone" ? (
-                <IoCall className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <IoCall
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                />
               ) : (
-                <HiOutlineDocumentDownload className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <HiOutlineDocumentDownload
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                />
               )}
               <input
                 type={customerSearchMode === "phone" ? "tel" : "text"}
                 inputMode={customerSearchMode === "phone" ? "numeric" : "text"}
                 value={customerPhoneInput}
-                onChange={(e) => customerSearchMode === "phone"
-                  ? handleCustomerPhoneChange(e.target.value)
-                  : setCustomerPhoneInput(e.target.value.toUpperCase())}
+                onChange={(e) =>
+                  customerSearchMode === "phone"
+                    ? handleCustomerPhoneChange(e.target.value)
+                    : setCustomerPhoneInput(e.target.value.toUpperCase())
+                }
                 onPaste={(e) => {
                   e.preventDefault();
                   const pasted = e.clipboardData.getData("text");
-                  if (customerSearchMode === "phone") handleCustomerPhoneChange(pasted);
+                  if (customerSearchMode === "phone")
+                    handleCustomerPhoneChange(pasted);
                   else setCustomerPhoneInput(pasted.trim().toUpperCase());
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") searchCustomerOrders();
                 }}
-                placeholder={customerSearchMode === "phone"
-                  ? "01XXXXXXXXX / বাংলা নম্বরও পেস্ট করতে পারবেন"
-                  : "ইনভয়েস / Order ID লিখুন (যেমন RA0101...)"}
+                placeholder={
+                  customerSearchMode === "phone"
+                    ? "01XXXXXXXXX / বাংলা নম্বরও পেস্ট করতে পারবেন"
+                    : "ইনভয়েস / Order ID লিখুন (যেমন RA0101...)"
+                }
                 maxLength={customerSearchMode === "phone" ? 14 : 40}
                 className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
               />
@@ -912,16 +999,28 @@ const SearchBy = ({ onClick }) => {
         {customerRecord && (
           <div className="grid grid-cols-1 gap-3 px-4 py-4 sm:grid-cols-3 sm:px-5">
             <div className="rounded-xl bg-slate-50 p-3">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Customer</p>
-              <p className="mt-1 truncate text-sm font-bold text-slate-800">{customerRecord.name || "Name not available"}</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                Customer
+              </p>
+              <p className="mt-1 truncate text-sm font-bold text-slate-800">
+                {customerRecord.name || "Name not available"}
+              </p>
             </div>
             <div className="rounded-xl bg-slate-50 p-3">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Phone</p>
-              <p className="mt-1 text-sm font-bold text-slate-800">{customerRecord.phone || customerPhoneInput}</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                Phone
+              </p>
+              <p className="mt-1 text-sm font-bold text-slate-800">
+                {customerRecord.phone || customerPhoneInput}
+              </p>
             </div>
             <div className="rounded-xl bg-slate-50 p-3">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Address</p>
-              <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-700">{customerRecord.address || "—"}</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                Address
+              </p>
+              <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-700">
+                {customerRecord.address || "—"}
+              </p>
             </div>
           </div>
         )}
@@ -930,10 +1029,16 @@ const SearchBy = ({ onClick }) => {
           <div className="border-t border-slate-100 px-4 py-4 sm:px-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h4 className="text-sm font-bold text-slate-800">Order Details</h4>
-                <p className="text-xs text-slate-500">সর্বশেষ অর্ডার আগে দেখানো হচ্ছে</p>
+                <h4 className="text-sm font-bold text-slate-800">
+                  Order Details
+                </h4>
+                <p className="text-xs text-slate-500">
+                  সর্বশেষ অর্ডার আগে দেখানো হচ্ছে
+                </p>
               </div>
-              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{customerOrders.length} Orders</span>
+              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                {customerOrders.length} Orders
+              </span>
             </div>
 
             {customerOrders.length > 0 ? (
@@ -941,68 +1046,155 @@ const SearchBy = ({ onClick }) => {
                 <table className="w-full min-w-[1080px] border-collapse text-left text-sm">
                   <thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
                     <tr>
-                      <th className="whitespace-nowrap px-4 py-3 font-semibold">Order ID</th>
-                      <th className="whitespace-nowrap px-4 py-3 font-semibold">Date</th>
-                      <th className="whitespace-nowrap px-4 py-3 font-semibold">Products</th>
-                      <th className="whitespace-nowrap px-4 py-3 text-center font-semibold">Qty</th>
-                      <th className="whitespace-nowrap px-4 py-3 text-right font-semibold">Total</th>
-                      <th className="whitespace-nowrap px-4 py-3 font-semibold">Source</th>
-                      <th className="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
-                      <th className="whitespace-nowrap px-4 py-3 font-semibold">Courier / CN</th>
-                      <th className="whitespace-nowrap px-4 py-3 text-center font-semibold">Actions</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-semibold">
+                        Order ID
+                      </th>
+                      <th className="whitespace-nowrap px-4 py-3 font-semibold">
+                        Date
+                      </th>
+                      <th className="whitespace-nowrap px-4 py-3 font-semibold">
+                        Products
+                      </th>
+                      <th className="whitespace-nowrap px-4 py-3 text-center font-semibold">
+                        Qty
+                      </th>
+                      <th className="whitespace-nowrap px-4 py-3 text-right font-semibold">
+                        Total
+                      </th>
+                      <th className="whitespace-nowrap px-4 py-3 font-semibold">
+                        Source
+                      </th>
+                      <th className="whitespace-nowrap px-4 py-3 font-semibold">
+                        Status
+                      </th>
+                      <th className="whitespace-nowrap px-4 py-3 font-semibold">
+                        Courier / CN
+                      </th>
+                      <th className="whitespace-nowrap px-4 py-3 text-center font-semibold">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {customerOrders.map((row) => {
                       const items = Array.isArray(row.items) ? row.items : [];
-                      const qty = items.reduce((sum, item) => sum + Number(item?.quantity || 0), 0);
-                      const productNames = items.map((item) => item?.title || item?.name).filter(Boolean);
+                      const qty = items.reduce(
+                        (sum, item) => sum + Number(item?.quantity || 0),
+                        0,
+                      );
+                      const productNames = items
+                        .map((item) => item?.title || item?.name)
+                        .filter(Boolean);
                       return (
-                        <tr key={row.id} className="transition hover:bg-blue-50/50">
-                          <td className="whitespace-nowrap px-4 py-3 font-semibold text-blue-700">#{row.orderID || row.id}</td>
-                          <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatOrderDate(row.created_at)}</td>
-                          <td className="max-w-[260px] px-4 py-3 text-slate-700">
-                            <div className="line-clamp-2">{productNames.length ? productNames.join(", ") : "—"}</div>
+                        <tr
+                          key={row.id}
+                          className="transition hover:bg-blue-50/50"
+                        >
+                          <td className="whitespace-nowrap px-4 py-3 font-semibold text-blue-700">
+                            #{row.orderID || row.id}
                           </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-center font-medium text-slate-700">{qty || "—"}</td>
-                          <td className="whitespace-nowrap px-4 py-3 text-right font-semibold text-slate-800">৳ {Number(row?.totals?.grand || 0).toLocaleString("en-BD")}</td>
-                          <td className="whitespace-nowrap px-4 py-3 text-slate-600">{row?.meta?.source || "—"}</td>
+                          <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                            {formatOrderDate(row.created_at)}
+                          </td>
+                          <td className="max-w-[260px] px-4 py-3 text-slate-700">
+                            <div className="line-clamp-2">
+                              {productNames.length
+                                ? productNames.join(", ")
+                                : "—"}
+                            </div>
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-center font-medium text-slate-700">
+                            {qty || "—"}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right font-semibold text-slate-800">
+                            ৳{" "}
+                            {Number(row?.totals?.grand || 0).toLocaleString(
+                              "en-BD",
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                            {row?.meta?.source || "—"}
+                          </td>
                           <td className="whitespace-nowrap px-4 py-3">
                             <div className="relative inline-flex items-center">
-                              <span className={`pointer-events-none absolute left-2 h-1.5 w-1.5 rounded-full ${
-                                ["delivered", "fulfilled", "paid"].includes(String(row.status || "").toLowerCase())
-                                  ? "bg-emerald-500"
-                                  : ["cancelled", "returned", "refunded"].includes(String(row.status || "").toLowerCase())
-                                    ? "bg-rose-500"
-                                    : String(row.status || "").toLowerCase() === "shipped"
-                                      ? "bg-sky-500"
-                                      : String(row.status || "").toLowerCase() === "processing"
-                                        ? "bg-indigo-500"
-                                        : "bg-amber-500"
-                              }`} />
+                              <span
+                                className={`pointer-events-none absolute left-2 h-1.5 w-1.5 rounded-full ${
+                                  ["delivered", "fulfilled", "paid"].includes(
+                                    String(row.status || "").toLowerCase(),
+                                  )
+                                    ? "bg-emerald-500"
+                                    : [
+                                          "cancelled",
+                                          "returned",
+                                          "refunded",
+                                        ].includes(
+                                          String(
+                                            row.status || "",
+                                          ).toLowerCase(),
+                                        )
+                                      ? "bg-rose-500"
+                                      : String(
+                                            row.status || "",
+                                          ).toLowerCase() === "shipped"
+                                        ? "bg-sky-500"
+                                        : String(
+                                              row.status || "",
+                                            ).toLowerCase() === "processing"
+                                          ? "bg-indigo-500"
+                                          : "bg-amber-500"
+                                }`}
+                              />
                               <select
-                                value={ORDER_STATUS.some((option) => option.id === String(row.status || "").toLowerCase()) ? String(row.status).toLowerCase() : ""}
-                                disabled={updatingCustomerOrderIds.includes(String(row.id))}
-                                onChange={(event) => updateStatus(row, event.target.value, true)}
+                                value={
+                                  ORDER_STATUS.some(
+                                    (option) =>
+                                      option.id ===
+                                      String(row.status || "").toLowerCase(),
+                                  )
+                                    ? String(row.status).toLowerCase()
+                                    : ""
+                                }
+                                disabled={updatingCustomerOrderIds.includes(
+                                  String(row.id),
+                                )}
+                                onChange={(event) =>
+                                  updateStatus(row, event.target.value, true)
+                                }
                                 aria-label={`Update status for order ${row.orderID || row.id}`}
                                 className={`min-w-[145px] appearance-none rounded-full border py-1.5 pl-6 pr-7 text-[11px] font-semibold capitalize outline-none transition focus:ring-2 focus:ring-blue-200 disabled:cursor-wait disabled:opacity-60 ${getOrderStatusClass(row.status)}`}
                               >
-                                {!ORDER_STATUS.some((option) => option.id === String(row.status || "").toLowerCase()) && (
-                                  <option value="">{row.status || "Unknown"}</option>
+                                {!ORDER_STATUS.some(
+                                  (option) =>
+                                    option.id ===
+                                    String(row.status || "").toLowerCase(),
+                                ) && (
+                                  <option value="">
+                                    {row.status || "Unknown"}
+                                  </option>
                                 )}
                                 {ORDER_STATUS.map((option) => (
-                                  <option key={option.id} value={option.id}>{option.name}</option>
+                                  <option key={option.id} value={option.id}>
+                                    {option.name}
+                                  </option>
                                 ))}
                               </select>
-                              <span className="pointer-events-none absolute right-2 text-[9px] opacity-60">▼</span>
+                              <span className="pointer-events-none absolute right-2 text-[9px] opacity-60">
+                                ▼
+                              </span>
                             </div>
-                            {updatingCustomerOrderIds.includes(String(row.id)) && (
-                              <span className="ml-2 text-[10px] text-blue-600">Saving…</span>
+                            {updatingCustomerOrderIds.includes(
+                              String(row.id),
+                            ) && (
+                              <span className="ml-2 text-[10px] text-blue-600">
+                                Saving…
+                              </span>
                             )}
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-slate-600">
                             <div>{row?.fulfillment?.courier || "—"}</div>
-                            <div className="text-xs text-slate-400">{row?.fulfillment?.consignment_id || ""}</div>
+                            <div className="text-xs text-slate-400">
+                              {row?.fulfillment?.consignment_id || ""}
+                            </div>
                           </td>
                           <td className="whitespace-nowrap px-4 py-3">
                             <div className="flex items-center justify-center gap-1.5">
@@ -1010,27 +1202,43 @@ const SearchBy = ({ onClick }) => {
                                 <button
                                   type="button"
                                   onClick={() => retryCourier(row)}
-                                  disabled={courierSendingIds.includes(String(row.id))}
+                                  disabled={courierSendingIds.includes(
+                                    String(row.id),
+                                  )}
                                   title="Retry Courier"
                                   className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-[11px] font-semibold text-emerald-700 transition hover:border-emerald-500 hover:bg-emerald-600 hover:text-white disabled:cursor-wait disabled:opacity-60"
                                 >
                                   <IoIosSend size={14} />
-                                  {courierSendingIds.includes(String(row.id)) ? "Sending…" : "Retry Courier"}
+                                  {courierSendingIds.includes(String(row.id))
+                                    ? "Sending…"
+                                    : "Retry Courier"}
                                 </button>
                               )}
-                              {((row.status === "pending" && user?.staff_role === "Sales Executive") ||
+                              {((row.status === "pending" &&
+                                user?.staff_role === "Sales Executive") ||
                                 user?.staff_role === "HR" ||
                                 user?.staff_role === "Sales Manager" ||
                                 user?.staff_role === "Admin") && (
-                                <Link href={`/place-gur/edit-order/id=${row.id}`}>
+                                <Link
+                                  href={`/place-gur/edit-order/id=${row.id}`}
+                                >
                                   <span className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-2 text-[11px] font-semibold text-indigo-700 transition hover:border-indigo-500 hover:bg-indigo-600 hover:text-white">
                                     <FiEdit size={13} /> Edit
                                   </span>
                                 </Link>
                               )}
+                              {user.staff_role === "HR" && (
+                                <span
+                                  onClick={() => stickerStatus(row)}
+                                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-2 text-[11px] font-semibold text-indigo-700 transition hover:border-indigo-500 hover:bg-indigo-600 hover:text-white"
+                                >
+                                  <FiPrinter size={13} /> Sticker
+                                </span>
+                              )}
                               <Link href={`/place-gur/id=${row.id}`}>
                                 <span className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-2 text-[11px] font-semibold text-blue-700 transition hover:border-blue-500 hover:bg-blue-600 hover:text-white">
-                                  <HiOutlineDocumentDownload size={14} /> Invoice
+                                  <HiOutlineDocumentDownload size={14} />{" "}
+                                  Invoice
                                 </span>
                               </Link>
                             </div>
@@ -1043,8 +1251,12 @@ const SearchBy = ({ onClick }) => {
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
-                <p className="text-sm font-semibold text-slate-700">কোনো অর্ডার হিস্ট্রি পাওয়া যায়নি</p>
-                <p className="mt-1 text-xs text-slate-400">এই কাস্টমারের রেকর্ডে সংরক্ষিত অর্ডার নেই।</p>
+                <p className="text-sm font-semibold text-slate-700">
+                  কোনো অর্ডার হিস্ট্রি পাওয়া যায়নি
+                </p>
+                <p className="mt-1 text-xs text-slate-400">
+                  এই কাস্টমারের রেকর্ডে সংরক্ষিত অর্ডার নেই।
+                </p>
               </div>
             )}
           </div>
